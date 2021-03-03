@@ -2,5 +2,7 @@
 # @Time     : 2021-02-21 01:28
 # @Author   : BGLB
 # @Software : PyCharm
-
-# 任务队列模块
+import sys
+from crawler.base import CrawlerBrower, CrawlerRequest, CrawlerAndroid
+i = __import__('crawler.base')
+sys.modules['crawler.base'] = None
