@@ -2,6 +2,9 @@
 # @Time     : 2021-03-04 21:47
 # @Author   : BGLB
 # @Software : PyCharm
+"""
+    静态常量数据
+"""
 import os
 import platform
 
