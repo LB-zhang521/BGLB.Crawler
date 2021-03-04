@@ -58,11 +58,11 @@ class CrawlerRequest(_CrawlerBase):
         self.log = BaseLog('crawlerRequest', '{}-{}'.format(crawlerConfig.get('CrawlerName'), crawlerConfig.get(
             'CrawlerType')))
 
-    def post(self, **kw):
-        return self.sesscion.post(**kw)
+    def post(self, url, **kw):
+        return self.sesscion.post(url, **kw)
 
-    def get(self, **kw):
-        return self.sesscion.get(**kw)
+    def get(self, url, **kw):
+        return self.sesscion.get(url, **kw)
 
     def save_cookie(self):
         pass

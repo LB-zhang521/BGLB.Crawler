@@ -23,7 +23,7 @@ def start_one_task(taskConfig: dict):
     crawler_module = importlib.import_module('{}.spyider'.format(crawler_name.lower()))
     # crawler_cls = eval('crawler_module.Crawler{}'.format(crawler_name.title()))
     crawler_cls = getattr(crawler_module, 'Crawler{}'.format(crawler_name.title()))
-    ControleLog = BaseLog('scheduler_control', crawler_name.lower())
+    ControleLog = BaseLog('scheduler_control')
     ControleLog.info('{}, {}开始启动'.format(taskConfig.get('TaskName'), crawler_type))
 
 

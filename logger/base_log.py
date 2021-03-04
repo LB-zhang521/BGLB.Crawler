@@ -28,11 +28,11 @@ lock = threading.Lock()
 
 class BaseLog(object):
 
-    log_root_dir = LOG_CONFIG['LOG_ROOT_DIR']
-    log_colors = LOG_CONFIG['LOG_COLOR_CONFIG']
+    LOG_CONFIG['LOG_ROOT_DIR'] = LOG_CONFIG['LOG_ROOT_DIR']
+    LOG_CONFIG['LOG_COLOR_CONFIG'] = LOG_CONFIG['LOG_COLOR_CONFIG']
     def __init__(self, _module, spider=''):
 
-        self.log_dir = os.path.join(BaseLog.log_root_dir, _module, spider)
+        self.log_dir = os.path.join(LOG_CONFIG['LOG_ROOT_DIR'], _module, spider)
         self.log_name = '_'.join([_module, spider])  # 决定了日志最小区分单位
         self.backup_count = 20
         os.makedirs(self.log_dir, exist_ok=True)
@@ -40,7 +40,7 @@ class BaseLog(object):
         self.formatter_console = colorlog.ColoredFormatter(
             '%(log_color)s'
             '%(asctime)s: [%(process)d %(thread)d] - [{}] [{}] - [%(levelname)s]: %(message)s'.format(_module, spider),
-            log_colors=BaseLog.log_colors)
+            log_colors=LOG_CONFIG['LOG_COLOR_CONFIG'])
 
         self.formatter_file = logging.Formatter(
             '%(asctime)s: [%(process)d %(thread)d] - [{}] [{}] - [%(levelname)s]: %(message)s'.format(_module, spider))
@@ -170,7 +170,6 @@ class BaseLog(object):
 if __name__ == '__main__':
     log_test = BaseLog('crawler', 'baidu')
     log_test.debug("出错")
-    log_test.error(BaseLog.log_colors)
     log_test.info("test")
     log_test.warn("test")
     # main()
