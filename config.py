@@ -22,6 +22,8 @@ LOG_CONFIG = {
     'LOG_ROOT_DIR': os.path.join(BASE_DIR, 'log')
 }
 
+ISSAY = True
+
 node_config = {
     "request": {
         "MaxTaskCount": 2,
@@ -35,6 +37,7 @@ node_config = {
         "ChromeVersion": "",
     }
 }
+
 
 if __name__ == '__main__':
     print(BASE_DIR)

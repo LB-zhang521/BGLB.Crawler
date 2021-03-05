@@ -18,7 +18,7 @@ def _chromedriver():
     """
     if 'Windows' in platform.system():
         return os.path.join(BASE_DIR, r'crawler\chromedriver\chromedriver.exe')
-    return  os.path.join(BASE_DIR, r'crawler\chromedriver\chromedriver')
+    return os.path.join(BASE_DIR, r'crawler\chromedriver\chromedriver')
 
 
 def _abdexecpath():

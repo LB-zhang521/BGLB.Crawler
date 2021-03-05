@@ -9,11 +9,9 @@ import re
 import sys
 import threading
 from logging.handlers import TimedRotatingFileHandler
-
 import colorlog
-
 from config import DEBUG, LOG_CONFIG
-
+from utils.common.tosay import Tosay
 """
     日志记录
     ./log/[crawer]/[spyider]/[lever.log]
@@ -24,6 +22,8 @@ from config import DEBUG, LOG_CONFIG
 """
 
 lock = threading.Lock()
+_say_thread = Tosay()
+_say_thread.start()
 
 
 class BaseLog(object):
@@ -48,7 +48,7 @@ class BaseLog(object):
         # 记录起来，用于回收
         self.stream_console_handler = None
         self.file_handler_dict = {}
-
+        self.say_thread = _say_thread
         # 一个logger对应多个handler
         self.logger = logging.getLogger(self.log_name)
         if DEBUG:
@@ -60,6 +60,8 @@ class BaseLog(object):
     def __del__(self):
         try:
             self.__delete_logger_handlers()
+            if self.say_thread:
+                self.say_thread.kill()
         except Exception as e:
             raise e
 
@@ -119,7 +121,14 @@ class BaseLog(object):
         self.logger.addHandler(handler)
         self.file_handler_dict[level] = handler
 
-    def __log(self, message, lever):
+    def __log(self, message, lever, **kwargs):
+        """
+
+        :param message:
+        :param lever:
+        :param kwargs:
+        :return:
+        """
         LEVER = {
             'CRITICAL': 50,
             'FATAL': 50,
@@ -130,13 +139,16 @@ class BaseLog(object):
             'DEBUG': 10,
             'NOTSET': 0,
         }
-        lock.acquire(timeout=.3)
-
+        if kwargs.get('tosay', 'True'):
+            if self.say_thread:
+                self.say_thread.push_text(message)
+        lock.acquire(timeout=.5)
         self.logger.log(LEVER[lever], message)
+
         if lock.locked():
             lock.release()
 
-    def debug(self, message, module='', lineno=0):
+    def debug(self, message, module='', lineno=0, **kwargs):
         """
         :param message:
         :param module: sys._getframe().f_code.co_name
@@ -144,19 +156,19 @@ class BaseLog(object):
         :return:
         """
         msg = self.format_msg(message, module, lineno)
-        self.__log(msg, 'DEBUG')
+        self.__log(msg, 'DEBUG', **kwargs)
 
-    def info(self, message, module='', lineno=0):
+    def info(self, message, module='', lineno=0, **kwargs):
         msg = self.format_msg(message, module, lineno)
-        self.__log(msg, 'INFO')
+        self.__log(msg, 'INFO', **kwargs)
 
-    def warn(self, message, module='', lineno=0):
+    def warn(self, message, module='', lineno=0, **kwargs):
         msg = self.format_msg(message, module, lineno)
-        self.__log(msg, 'WARNING')
+        self.__log(msg, 'WARNING', **kwargs)
 
-    def error(self, message, module='', lineno=0):
+    def error(self, message, module='', lineno=0, **kwargs):
         msg = self.format_msg(message, module, lineno)
-        self.__log(msg, 'ERROR')
+        self.__log(msg, 'ERROR', **kwargs)
 
     def format_msg(self, message, module, lineno):
         message = str(message)

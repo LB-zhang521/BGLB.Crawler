@@ -4,11 +4,8 @@
 # @Software : PyCharm
 import importlib
 
-from config import node_config, BASE_DIR
-# from main_debug import TaskConfig
 from logger import BaseLog
 from main_debug import TaskConfig
-
 
 
 
@@ -25,6 +22,10 @@ def start_one_task(taskConfig: dict):
     crawler_cls = getattr(crawler_module, 'Crawler{}'.format(crawler_name.title()))
     ControleLog = BaseLog('scheduler_control')
     ControleLog.info('{}, {}开始启动'.format(taskConfig.get('TaskName'), crawler_type))
+
+    t = crawler_cls(TaskConfig.get('CrawlerConfig'))
+    t.start()
+    ControleLog.info('结束!')
 
 
 def start_tasks():
