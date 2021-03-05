@@ -32,59 +32,63 @@ class Tosay(threading.Thread):
 
     def push_text(self, text: str, lever=''):
         """
-
         :param text: 文本
         :param lever: 优先级 - ['priority', 'last']
         :return:
         """
-        # lock.locked()
-        # _lock.acquire(timeout=.5)
+        while not _lock.locked():
+            _lock.acquire()
         self.__is_push = True
         rule = re.compile(u"[^a-zA-Z0-9\u4e00-\u9fa5]")
-        # ignore_bytes = ['\n', '\r', '\t', '\r\n', '[', ']', '{', '}', '.', '!', '.', ':', '']
         text_format = rule.sub('', text)
-        time.sleep(0.3)
-        # while not self.engine.isBusy():
-        #     # self.engine.stop()
-        #     # print('busy')
-        #     # time.sleep(.5)
-        #     pass
+        # print(text_format)
         if lever == 'priority':
             self.__priority_list.insert(0, text_format)
         if lever == 'last':
             self.__last_list.append(text_format)
         if not lever:
             self.__text_list.append(text_format)
-
-        for text in self.__priority_list:
-            self.__text_list.insert(0, text)
-            self.__priority_list.remove(text)
-        for text in self.__last_list:
-            self.__text_list.append(text)
-            self.__last_list.remove(text)
+        self.__priority_list.extend(self.__text_list)
+        self.__text_list = []
+        self.__priority_list.extend(self.__last_list)
+        self.__last_list = []
+        self.__text_list = self.__priority_list
+        self.__priority_list = []
+        # print(self.__text_list)
         self.__is_push = False
-        # if _lock.acquire(timeout=.5):
-        #     _lock.release()
+        _lock.release()
 
     def run(self) -> None:
         self.__ready_say()
         while ISSAY:
+            if self.__is_push and _lock.locked():
+                continue
+            # print(self.__text_list)
+            self._say_text_list()
 
-            say_text_length = 0
-            for text in self.__text_list:
-                self.engine.say(text)
-                say_text_length += len(text)
-                self.__text_list.remove(text)
-
-                if say_text_length // 20 > 2.5 or len(self.__text_list) == 0:
-
-                    # if not self.engine.isBusy():
-                    #     break
-                    self.engine.runAndWait()
-                    say_text_length = 0
             if self.__is_kill and len(self.__text_list) == 0:
-                # print(self.engine.isBusy())
-                return
+                break
+
+    def _say_text_list(self):
+        _lock.acquire()
+        say_text_length = 0
+        text_list = self.__text_list
+        for i in range(len(text_list)):
+
+            # self.__text_list.remove(text)
+            # print(text)
+            self.engine.say(text_list[i])
+            # pyttsx3.speak(text)
+            say_text_length += len(text_list[i])
+            if say_text_length//20 > 5:
+                self.engine.runAndWait()
+                say_text_length = 0
+            if len(self.__text_list) == i+1:
+                self.engine.runAndWait()
+                say_text_length = 0
+                self.__text_list = []
+        if _lock.locked():
+            _lock.release()
 
     def kill(self):
         self.__is_kill = True

@@ -24,8 +24,6 @@ class _CrawlerBase(threading.Thread):
         self.crawlerDataDir = os.path.join(BASE_DIR, r'{}\crawler_data'.format(root_sub_dir))  # 数据保存根目录
         self.log = BaseLog('crawler_{}'.format(crawlerConfig.get('CrawlerType')), '{}'.format(crawlerConfig.get(
             'CrawlerName')))
-        # self.log.say_thread = Tosay()
-        # self.log.say_thread.start()
         pass
 
     @abstractmethod

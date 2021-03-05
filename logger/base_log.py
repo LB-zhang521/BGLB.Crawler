@@ -139,14 +139,15 @@ class BaseLog(object):
             'DEBUG': 10,
             'NOTSET': 0,
         }
-        if kwargs.get('tosay', 'True'):
+
+        lock.acquire(timeout=.5)
+        if kwargs.get('tosay', True):
             if self.say_thread:
                 self.say_thread.push_text(message)
-        lock.acquire(timeout=.5)
         self.logger.log(LEVER[lever], message)
-
         if lock.locked():
             lock.release()
+
 
     def debug(self, message, module='', lineno=0, **kwargs):
         """
@@ -180,10 +181,11 @@ class BaseLog(object):
 
 
 if __name__ == '__main__':
-    log_test = BaseLog('crawler', 'baidu')
-    log_test.debug("出错")
-    log_test.info("test")
-    log_test.warn("test")
+    # log_test = BaseLog('crawler', 'baidu')
+    # log_test.debug("出错")
+    # log_test.info("test")
+    # log_test.warn("test")
     # main()
     # logger.debug('ss')
     # logger.error("error")
+    pass
