@@ -27,10 +27,11 @@ class CrawlerRequest(_CrawlerBase):
 
     @abstractmethod
     def main(self):
-        self.log.warn('爬虫主方法未实现')
+        self.log.warn('爬虫主方法未实现', say=True)
 
     def run(self) -> None:
         self.sesscion = requests.session()
         self.main()
         if self.sesscion:
             self.sesscion.close()
+        self.log.info('爬虫程序运行完毕', say=True)

@@ -4,6 +4,7 @@
 # @Software : PyCharm
 import threading
 import time
+from multiprocessing import freeze_support
 
 from config import node_config
 from logger import BaseLog
@@ -35,4 +36,5 @@ def main():
 
 
 if __name__ == '__main__':
+    freeze_support()
     main()

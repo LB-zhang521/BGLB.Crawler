@@ -3,7 +3,6 @@
 # @Author   : BGLB
 # @Software : PyCharm
 import importlib
-import threading
 
 from logger import BaseLog
 from main_debug import TaskConfig
@@ -26,7 +25,7 @@ def start_one_task(taskConfig: dict):
     t.start()
     # t.join()
 
-    ControleLog.info('Crawler 线程结束!', saylever='last')
+    ControleLog.info('Crawler 线程正常结束!', say=True, saylever='last')
     ControleLog.info('启动saver 线程')
     ControleLog.info('启动saver 线程,')
 

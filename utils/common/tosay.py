@@ -28,7 +28,7 @@ class Tosay(threading.Thread):
 
     def __ready_say(self):
         self.engine = pyttsx3.init(debug=DEBUG)
-        self.engine.setProperty('rate', 400)
+        self.engine.setProperty('rate', 800)
 
     def push_text(self, text: str, saylever=''):
         """

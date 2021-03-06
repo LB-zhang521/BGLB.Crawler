@@ -33,36 +33,38 @@ class BaseLog(object):
     LOG_CONFIG['LOG_COLOR_CONFIG'] = LOG_CONFIG['LOG_COLOR_CONFIG']
     def __init__(self, _module, spider=''):
 
-        self.log_dir = os.path.join(LOG_CONFIG['LOG_ROOT_DIR'], _module, spider)
-        self.log_name = '_'.join([_module, spider])
+        self.__log_dir = os.path.join(LOG_CONFIG['LOG_ROOT_DIR'], _module, spider)
+        self.__log_name = '_'.join([_module, spider])
         self.backup_count = 20
-        os.makedirs(self.log_dir, exist_ok=True)
+        os.makedirs(self.__log_dir, exist_ok=True)
 
-        self.formatter_console = colorlog.ColoredFormatter(
+        self.__formatter_console = colorlog.ColoredFormatter(
             '%(log_color)s'
             '%(asctime)s: [%(process)d %(thread)d] - [{}] [{}] - [%(levelname)s]: %(message)s'.format(_module, spider),
             log_colors=LOG_CONFIG['LOG_COLOR_CONFIG'])
 
-        self.formatter_file = logging.Formatter(
+        self.__formatter_file = logging.Formatter(
             '%(asctime)s: [%(process)d %(thread)d] - [{}] [{}] - [%(levelname)s]: %(message)s'.format(_module, spider))
 
         # 记录起来，用于回收
-        self.stream_console_handler = None
-        self.file_handler_dict = {}
-        self.say_thread = _say_thread
+        self.__stream_console_handler = None
+        self.__file_handler_dict = {}
+        self.__say_thread = None
+        if not self.__say_thread:
+            self.__say_thread = _say_thread
         # 一个logger对应多个handler
-        self.logger = logging.getLogger(self.log_name)
+        self.__logger = logging.getLogger(self.__log_name)
         if DEBUG:
-            self.logger.setLevel(logging.DEBUG)
+            self.__logger.setLevel(logging.DEBUG)
         else:
-            self.logger.setLevel(logging.INFO)
+            self.__logger.setLevel(logging.INFO)
         self.__add_handler()
 
     def __del__(self):
         try:
             self.__delete_logger_handlers()
-            if self.say_thread:
-                self.say_thread.kill()
+            if self.__say_thread:
+                self.__say_thread.kill()
         except Exception as e:
             raise e
 
@@ -73,9 +75,9 @@ class BaseLog(object):
         """
 
         # 首先清空掉logger的handles，否则可能遇到日志重复的问题
-        for h in self.logger.handlers:
-            self.logger.removeHandler(h)
-        self.logger.handlers = []
+        for h in self.__logger.handlers:
+            self.__logger.removeHandler(h)
+        self.__logger.handlers = []
 
         self.__add_handler_stream()
 
@@ -85,11 +87,11 @@ class BaseLog(object):
 
     def __delete_logger_handlers(self):
         try:
-            logging.Logger.manager.loggerDict.pop(self.log_name)
-            self.logger.removeHandler(self.stream_console_handler)
-            for h in self.file_handler_dict:
-                self.logger.removeHandler(h)
-            self.logger.handlers = []
+            logging.Logger.manager.loggerDict.pop(self.__log_name)
+            self.__logger.removeHandler(self.__stream_console_handler)
+            for h in self.__file_handler_dict:
+                self.__logger.removeHandler(h)
+            self.__logger.handlers = []
         except Exception as e:
             print(e)
 
@@ -97,30 +99,30 @@ class BaseLog(object):
         """
         :return:
         """
-        self.stream_console_handler = logging.StreamHandler(stream=sys.stdout)
+        self.__stream_console_handler = logging.StreamHandler(stream=sys.stdout)
         if DEBUG:
-            self.stream_console_handler.setLevel(logging.DEBUG)
+            self.__stream_console_handler.setLevel(logging.DEBUG)
         else:
-            self.stream_console_handler.setLevel(logging.INFO)
-        self.stream_console_handler.setFormatter(self.formatter_console)
+            self.__stream_console_handler.setLevel(logging.INFO)
+        self.__stream_console_handler.setFormatter(self.__formatter_console)
 
-        self.logger.addHandler(self.stream_console_handler)
+        self.__logger.addHandler(self.__stream_console_handler)
 
     def __add_handler_timed_rotate(self, level):
         """
         记录日志，并实现定期删除日志功能
         :return:
         """
-        log_file_path = os.path.join(self.log_dir, logging.getLevelName(level).lower()+'.log')
+        log_file_path = os.path.join(self.__log_dir, logging.getLevelName(level).lower()+'.log')
         handler = TimedRotatingFileHandler(filename=log_file_path, encoding='utf-8', when='M', interval=1,
                                            backupCount=5)
         handler.suffix = '%Y%m%d.bak'
         handler.extMatch = re.compile(r'^\d{8}.log$')
-        handler.setFormatter(self.formatter_file)
+        handler.setFormatter(self.__formatter_file)
         handler.setLevel(level)
 
-        self.logger.addHandler(handler)
-        self.file_handler_dict[level] = handler
+        self.__logger.addHandler(handler)
+        self.__file_handler_dict[level] = handler
 
     def __log(self, message, lever, **kwargs):
         """
@@ -140,12 +142,11 @@ class BaseLog(object):
             'DEBUG': 10,
             'NOTSET': 0,
         }
-        if kwargs.get('say', True) and self.say_thread:
-            # print(kwargs.get('saylever'))
-            self.say_thread.push_text(message, **kwargs)
-        lock.acquire(timeout=.5)
+        if kwargs.get('say', False):
+            self.__say_thread.push_text(message, kwargs.get('saylever', ''))
 
-        self.logger.log(LEVER[lever], message)
+        lock.acquire(timeout=.5)
+        self.__logger.log(LEVER[lever], message)
         if lock.locked():
             lock.release()
 
@@ -156,22 +157,22 @@ class BaseLog(object):
         :param lineno: sys._getframe().f_lineno
         :return:
         """
-        msg = self.format_msg(message, module, lineno)
+        msg = self.__format_msg(message, module, lineno)
         self.__log(msg, 'DEBUG', **kwargs)
 
     def info(self, message, module='', lineno=0, **kwargs):
-        msg = self.format_msg(message, module, lineno)
+        msg = self.__format_msg(message, module, lineno)
         self.__log(msg, 'INFO', **kwargs)
 
     def warn(self, message, module='', lineno=0, **kwargs):
-        msg = self.format_msg(message, module, lineno)
+        msg = self.__format_msg(message, module, lineno)
         self.__log(msg, 'WARNING', **kwargs)
 
     def error(self, message, module='', lineno=0, **kwargs):
-        msg = self.format_msg(message, module, lineno)
+        msg = self.__format_msg(message, module, lineno)
         self.__log(msg, 'ERROR', **kwargs)
 
-    def format_msg(self, message, module, lineno):
+    def __format_msg(self, message, module, lineno):
         message = str(message)
         if module:
             msg = '{}[line:{}] {}'.format(module, lineno, message)
@@ -179,13 +180,3 @@ class BaseLog(object):
             msg = '{}'.format(message)
         return msg
 
-
-if __name__ == '__main__':
-    # log_test = BaseLog('crawler', 'baidu')
-    # log_test.debug("出错")
-    # log_test.info("test")
-    # log_test.warn("test")
-    # main()
-    # logger.debug('ss')
-    # logger.error("error")
-    pass

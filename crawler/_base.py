@@ -28,7 +28,6 @@ class _CrawlerBase(threading.Thread):
 
     @abstractmethod
     def main(self):
-
         pass
 
     def saver(self):
