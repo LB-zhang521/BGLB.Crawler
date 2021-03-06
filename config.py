@@ -22,7 +22,10 @@ LOG_CONFIG = {
     'LOG_ROOT_DIR': os.path.join(BASE_DIR, 'log')
 }
 
-ISSAY = True
+SAY_CONFIG = {
+    "issay": True,
+    'rate': 500,  # 每分钟播报字数
+}
 
 node_config = {
     "request": {
@@ -37,8 +40,3 @@ node_config = {
         "ChromeVersion": "",
     }
 }
-
-
-if __name__ == '__main__':
-    print(BASE_DIR)
-    pass

@@ -9,7 +9,7 @@ import time
 
 import pyttsx3
 
-from config import ISSAY, DEBUG
+from config import SAY_CONFIG, DEBUG
 
 _lock = threading.Lock()
 
@@ -28,7 +28,7 @@ class Tosay(threading.Thread):
 
     def __ready_say(self):
         self.engine = pyttsx3.init(debug=DEBUG)
-        self.engine.setProperty('rate', 800)
+        self.engine.setProperty('rate', SAY_CONFIG.get('rate', 400))
 
     def push_text(self, text: str, saylever=''):
         """
@@ -54,7 +54,7 @@ class Tosay(threading.Thread):
 
     def run(self) -> None:
         self.__ready_say()
-        while ISSAY:
+        while SAY_CONFIG.get('issay', False):
             if self.__is_push and _lock.locked():
                 continue
             self.__priority_list.extend(self.__text_list)
