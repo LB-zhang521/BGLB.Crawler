@@ -3,10 +3,10 @@
 # @Author   : BGLB
 # @Software : PyCharm
 import importlib
+import threading
 
 from logger import BaseLog
 from main_debug import TaskConfig
-
 
 
 def start_one_task(taskConfig: dict):
@@ -22,10 +22,18 @@ def start_one_task(taskConfig: dict):
     crawler_cls = getattr(crawler_module, 'Crawler{}'.format(crawler_name.title()))
     ControleLog = BaseLog('scheduler_control')
     ControleLog.info('{}, {}开始启动'.format(taskConfig.get('TaskName'), crawler_type))
-
     t = crawler_cls(TaskConfig.get('CrawlerConfig'))
     t.start()
-    ControleLog.info('结束!')
+    # t.join()
+
+    ControleLog.info('Crawler 线程结束!', saylever='last')
+    ControleLog.info('启动saver 线程')
+    ControleLog.info('启动saver 线程,')
+
+    ControleLog.info('启动saver 守护线程线程')
+    ControleLog.info('启动saver 守护线程线程')
+    ControleLog.info('启动saver 守护线程线程 关闭！')
+    ControleLog.info('启动saver 守护线程线程 结束')
 
 
 def start_tasks():
@@ -56,6 +64,6 @@ def get_task_status(task_id):
 def get_task_working():
     pass
 
+
 if __name__ == '__main__':
     start_one_task(TaskConfig)
-    # ControleLog.info('test')

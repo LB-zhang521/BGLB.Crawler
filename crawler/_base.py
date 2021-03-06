@@ -21,10 +21,10 @@ class _CrawlerBase(threading.Thread):
     def __init__(self, crawlerConfig:dict):
         super().__init__()
         root_sub_dir = crawlerConfig.get('CrawlerName')
+        self.name = '{}{}'.format(crawlerConfig.get('CrawlerName'), crawlerConfig.get('CrawlerType'))
         self.crawlerDataDir = os.path.join(BASE_DIR, r'{}\crawler_data'.format(root_sub_dir))  # 数据保存根目录
-        self.log = BaseLog('crawler_{}'.format(crawlerConfig.get('CrawlerType')), '{}'.format(crawlerConfig.get(
-            'CrawlerName')))
-        pass
+        self.log = BaseLog('crawler', '{}_{}'.format(crawlerConfig.get('CrawlerName'), crawlerConfig.get(
+            'CrawlerType')))
 
     @abstractmethod
     def main(self):

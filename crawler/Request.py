@@ -3,11 +3,8 @@
 # @Author   : BGLB
 # @Software : PyCharm
 from abc import abstractmethod
-
 import requests
-
 from crawler._base import _CrawlerBase
-from logger import BaseLog
 
 
 class CrawlerRequest(_CrawlerBase):

@@ -23,7 +23,8 @@ from utils.common.tosay import Tosay
 
 lock = threading.Lock()
 _say_thread = Tosay()
-_say_thread.start()
+if not _say_thread.is_alive():
+    _say_thread.start()
 
 
 class BaseLog(object):
@@ -33,7 +34,7 @@ class BaseLog(object):
     def __init__(self, _module, spider=''):
 
         self.log_dir = os.path.join(LOG_CONFIG['LOG_ROOT_DIR'], _module, spider)
-        self.log_name = '_'.join([_module, spider])  # 决定了日志最小区分单位
+        self.log_name = '_'.join([_module, spider])
         self.backup_count = 20
         os.makedirs(self.log_dir, exist_ok=True)
 
@@ -139,15 +140,14 @@ class BaseLog(object):
             'DEBUG': 10,
             'NOTSET': 0,
         }
-
+        if kwargs.get('say', True) and self.say_thread:
+            # print(kwargs.get('saylever'))
+            self.say_thread.push_text(message, **kwargs)
         lock.acquire(timeout=.5)
-        if kwargs.get('tosay', True):
-            if self.say_thread:
-                self.say_thread.push_text(message)
+
         self.logger.log(LEVER[lever], message)
         if lock.locked():
             lock.release()
-
 
     def debug(self, message, module='', lineno=0, **kwargs):
         """
