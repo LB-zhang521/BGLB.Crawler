@@ -2,9 +2,11 @@
 # @Time     : 2021-03-05 22:55
 # @Author   : BGLB
 # @Software : PyCharm
+import traceback
 from abc import abstractmethod
 from selenium import webdriver
 from crawler._base import _CrawlerBase
+from scheduler.status_code import CrawlerStatus
 from utils.common.constant import StaticPath
 
 
@@ -18,7 +20,7 @@ class CrawlerBrower(_CrawlerBase):
         self.name = 'CrawlerBrower'
         self.driver = None
 
-    def driver_init(self, proxy: dict = '') -> webdriver.Chrome():
+    def driver_init(self, proxy: dict = None):
         """
         初始化chrome driver
         :type  proxy: dict
@@ -26,23 +28,34 @@ class CrawlerBrower(_CrawlerBase):
         :return: webdriver.Chrome()
 
         """
-        options = webdriver.ChromeOptions()
-        options.add_argument('--disable-infobars')  # 除去“正受到自动测试软件的控制”
-        # 添加代理
-        if not proxy and 'ip' in proxy.keys() and 'port' in proxy.keys() \
-                and proxy.get('ip', '') and proxy.get('port', ''):
-            options.add_argument("--proxy-server=http://{}:{}".format(proxy['ip'], proxy['_port']))
 
-        # 设置为开发者模式
-        options.add_experimental_option('excludeSwitches', ['enable-automation'])
-        driver = webdriver.Chrome(executable_path=StaticPath.chromedriver, options=options)
-        script = '''
-                Object.defineProperty(navigator, 'webdriver', {
-                    get: () => undefined
-                })
-                '''
-        driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {"source": script})
-        return driver
+        options = webdriver.ChromeOptions()
+        pres = {'credentials_enable_service': False, 'profile.password_manager_enabled': False}
+
+        # 添加代理
+        if proxy:
+            options.add_argument("--proxy-server=http://{}:{}".format(proxy['ip'], proxy['port']))
+        if not StaticPath.chromedriver.endswith('exe'):
+            options.add_argument('--headless')  # 浏览器不提供可视化页面. linux下如果系统不支持可视化不加这条会启动失败
+
+        options.add_argument("--disable-blink-features=AutomationControlled")  # 88版本过检测
+        options.add_argument('lang=zh_CN.UTF-8')  # 设置语言
+        options.add_argument('--disable-infobars')  # 除去“正受到自动测试软件的控制”
+        # options.add_argument("--auto-open-devtools-for-tabs") # 相当于 F12
+
+        options.add_experimental_option('excludeSwitches', ['enable-automation', 'enable-logging'])  # 过检测
+        options.add_experimental_option('useAutomationExtension', False)
+        options.add_experimental_option('prefs', pres)  # 禁用保存密码弹框
+
+        # options.add_extension('')  # 添加插件
+
+        self.driver = webdriver.Chrome(executable_path=StaticPath.chromedriver, options=options)
+
+        # 屏蔽window.navigator.webdriver = true
+        self.driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument",
+                                    {"source": "Object.defineProperty(navigator,'webdriver',{get:()=>undefined})"})
+
+        self.driver.maximize_window()
 
     @abstractmethod
     def main(self):
@@ -52,24 +65,39 @@ class CrawlerBrower(_CrawlerBase):
         """
         self.log.warn('爬虫主方法未实现')
 
-    def load_cookie(self):
+    def load_cookie(self, cookies: dict = None):
         """
-        加载历史cookie
+        加载历史cookie 给self.cookies_dict 赋值
         :return:
         """
+        super()._load_cookie(cookies)
 
-    def save_cookie(self):
+    def save_cookie(self, cookies: dict = None):
         """
-        保存cookie
+            保存cookie
+        :param cookies:
         :return:
         """
-        if self.driver:
-            self.driver.get_cookie()
+        self.cookie_dict.update(self.driver.get_cookie())
+        self._save_cookie(cookies)
 
     def run(self) -> None:
-        print(StaticPath.chromedriver)
         if not self.driver:
-            self.driver = self.driver_init()
-        self.main()
-        if self.driver:
-            self.driver.quit()
+            self.driver_init()
+        try:
+            super().run()
+            # self.main()
+        except Exception:
+            self.log.error(traceback.format_exc())
+            if self.driver:
+                self.driver.quit()
+            self.state = CrawlerStatus.CrawlerException
+
+        finally:
+            if self.driver:
+                self.driver.quit()
+
+    def __del__(self):
+        # self.state =
+        pass
+

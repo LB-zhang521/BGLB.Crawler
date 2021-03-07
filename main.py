@@ -2,14 +2,9 @@
 # @Time     : 2021-02-21 01:27
 # @Author   : BGLB
 # @Software : PyCharm
-import threading
-import time
-from multiprocessing import freeze_support
 
-from config import node_config
-from logger import BaseLog
 from scheduler.control import start_one_task
-import pyttsx3
+
 
 TaskConfig = {
     "TaskId": "132456789",
@@ -36,5 +31,4 @@ def main():
 
 
 if __name__ == '__main__':
-    freeze_support()
     main()
