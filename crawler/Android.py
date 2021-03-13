@@ -17,8 +17,8 @@ class CrawlerAndroid(_CrawlerBase):
         pass
 
     @abstractmethod
-    def main(self):
-        self.log.warn('爬虫主方法未实现')
+    def spider(self):
+        super().spider()
 
     @abstractmethod
     def saver(self):

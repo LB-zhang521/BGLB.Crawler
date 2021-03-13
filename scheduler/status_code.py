@@ -7,6 +7,7 @@ from enum import Enum, IntEnum
 
 class TaskStatus(Enum):
 
+    Waiting = '排队中'
     Init = '待处理'
     CrawlerWorking = '数据抓取中'
     CrawlerSuccess = '数据抓取完成'
@@ -19,14 +20,39 @@ class TaskStatus(Enum):
 class CrawlerStatus(IntEnum):
     CrawlerStart = 0
     Crawlering = 1
-    CrawlerException = -1
-    CrawlerEnd = 2
+    CrawlerException = 2
+    CrawlerEnd = 3
 
 
 class SaverStatus(IntEnum):
-    SaverParseFailed = -1
-    pass
+    SaverStart = 4
+    Savering = 5
+    SaverException = 6
+    SavererEnd = 7
 
 
 if __name__ == '__main__':
-    print(TaskStatus.CrawlerFailed == TaskStatus.CrawlerFailed)
+
+    class Base:
+        def __init__(self):
+            self.state = CrawlerStatus.CrawlerStart
+
+        def get_text(self):
+            return self.state
+
+    class Chile(Base):
+        def __init__(self):
+            super().__init__()
+            self.state = CrawlerStatus.Crawlering
+
+    class Sun(Base):
+        def __init__(self):
+            super().__init__()
+            self.state = CrawlerStatus.CrawlerException
+
+    c = Chile()
+
+    print(super(c).get_text())
+
+
+

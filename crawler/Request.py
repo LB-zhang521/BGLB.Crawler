@@ -12,9 +12,10 @@ class CrawlerRequest(_CrawlerBase):
     """
     接口爬虫
     """
+
     def __init__(self, crawlerConfig:dict):
         super().__init__(crawlerConfig)
-        self.session: requests.session() = requests.session()
+        self.session = requests.session()
         self.cookie_dict: dict = {}
 
     def post(self, url, data, **kw):
@@ -41,12 +42,11 @@ class CrawlerRequest(_CrawlerBase):
         super()._load_cookie(cookies)
 
     @abstractmethod
-    def main(self):
+    def spider(self):
         self.log.warn('爬虫主方法未实现', say=True)
-        raise Exception('错误')
 
     def run(self) -> None:
-        self.main()
+        super().run()
 
     def __del__(self):
         if self.session:

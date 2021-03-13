@@ -3,7 +3,7 @@
 # @Author   : BGLB
 # @Software : PyCharm
 
-from scheduler.control import start_one_task
+from scheduler.control import Task
 
 
 TaskConfig = {
@@ -21,7 +21,7 @@ TaskConfig = {
 
 
 def main():
-    start_one_task(TaskConfig)
+    Task().start_one_task(TaskConfig)
     # engine.say('你好')
     # engine.say('捕获到页面出现验证码, 请处理! 判断为未注册')
     #

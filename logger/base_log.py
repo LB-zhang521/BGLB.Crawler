@@ -40,7 +40,8 @@ class BaseLog(object):
 
         self.__formatter_console = colorlog.ColoredFormatter(
             '%(log_color)s'
-            '%(asctime)s: [%(process)d %(thread)d] - [{}] [{}] - [%(levelname)s]: %(message)s'.format(_module, spider),
+            '%(asctime)s [p:%(process)d t:%(thread)d] [{}] [{}] [%(levelname)s]: %(message)s'.format(_module,
+                                                                                                        spider),
             log_colors=LOG_CONFIG['LOG_COLOR_CONFIG'])
 
         self.__formatter_file = logging.Formatter(
