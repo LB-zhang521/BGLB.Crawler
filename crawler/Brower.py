@@ -89,5 +89,5 @@ class CrawlerBrower(_CrawlerBase):
         super().run()
 
     def __del__(self):
-        if self.driver:
+        if self.__driver_init and self.driver:
             self.driver.quit()

@@ -10,9 +10,9 @@ import time
 
 from logger import BaseLog
 from main_debug import TaskConfig
-from scheduler.status_code import CrawlerStatus
+from config import node_config
+from scheduler.status_code import CrawlerStatus, TaskStatus, SaverStatus
 import queue
-_TaskQueue = queue.Queue()
 
 
 class Task(object):
@@ -20,43 +20,105 @@ class Task(object):
     def __init__(self):
         self.TaskQueue = None
         self.log = BaseLog('scheduler_control')
+        self.TaskList = []
+        self.__InitTaskQueue()
 
     def start_one_task(self, taskConfig: dict):
         """
         :param taskConfig:
         :return:
         """
+        # self.tasksSet.add(taskConfig)
+        taskConfig.update({'TaskState': TaskStatus.Init.value})
         crawler_config = taskConfig.get('CrawlerConfig', {})
         task_name = taskConfig.get('TaskName')
         task_id = taskConfig.get('TaskId')
         self.log.info('{}, {}开始启动'.format(task_id, task_name))
-        self.start_crawle(crawler_config)
+        crawle_cls = self.get_crawle_class(crawler_config)
+        if crawle_cls:
+            try:
+                crawler_instance = crawle_cls(crawler_config)
+                crawler_instance.start()
+                taskConfig['CrawlerInstance'] = crawler_instance
+            except Exception:
+                self.log.error('{}爬虫实例化失败'.format(crawler_config))
+                taskConfig['TaskState'] = TaskStatus.CrawlerInstanceError.value
+        else:
+            taskConfig['TaskState'] = TaskStatus.CrawlerNotFound.value
 
-    def start_tasks(self):
+    def __InitTaskQueue(self):
+        if self.TaskQueue is None:
+            max = 0
+            for k, v in node_config.items():
+                max += int(v.get('MaxTaskCount'))
+            self.TaskQueue = queue.LifoQueue(max)
 
-        pass
+    def main(self):
+        while True:
+            if not self.TaskQueue.empty():
+                task_conf = self.TaskQueue.get()
+                self.TaskList.append(task_conf)
+                self.start_one_task(task_conf)
+            self.get_all_tasks_detail()
 
-    def start_crawle(self, crawler_config: dict):
+    def get_all_tasks_detail(self):
+        task_detail_dict = {
+            'request':  0,
+            'brower':  0,
+            'android': 0
+        }
+        # for task in self.TaskQueue:
+        #     task_detail_dict[task.get('CrawlerConfig', {}).get('CrawlerType')] += 1
+        for k, v in task_detail_dict.items():
+            if v > 0:
+                print('{}任务有{}个 正在排队'.format(k, v))
+            else:
+                print('{}任务空闲'.format(k))
+        task_detail_dict = {
+            'request': 0,
+            'brower': 0,
+            'android': 0
+        }
+        for task in self.TaskList:
+            print(task)
+            task = dict(task)
+            crawler_type = task.get('CrawlerConfig').get('CrawlerType')
+            task_detail_dict[crawler_type] += 1
+        for k, v in task_detail_dict.items():
+            if v > 0:
+                print('{}任务有{}个 正在进行'.format(k, v))
+            else:
+                print('{}任务空闲'.format(k))
+
+    def get_crawle_class(self, crawler_config: dict):
         """
-            启动爬虫主线程
+            获取爬虫实例
         :param crawler_config:
         :return:
         """
         crawler_name = crawler_config.get('CrawlerName', '')
         crawler_type = crawler_config.get('CrawlerType', '').lower()
-        crawler_module = importlib.import_module('{}.{}_{}'.format(crawler_name.lower(), crawler_name, crawler_type))
-        # crawler_cls = eval('crawler_module.Crawler{}'.format(crawler_name.title()))
+        try:
+            crawler_module = importlib.import_module('{}.{}_{}'.format(crawler_name.lower(), crawler_name, crawler_type))
+        except ModuleNotFoundError:
+            self.log.error('未找到模块[{}.{}_{}]'.format(crawler_name.lower(), crawler_name, crawler_type))
+            return None
+        if not hasattr(crawler_module, 'Crawler{}'.format(crawler_name.title())):
+            return None
         CrawlerClass = getattr(crawler_module, 'Crawler{}'.format(crawler_name.title()))
-        CrawlerInstance = CrawlerClass(crawler_config)
-        CrawlerInstance.start()
+        return CrawlerClass
 
-    def add_one_task(self, ):
+    def add_one_task(self, task_conf):
+        task_conf['TaskState'] = TaskStatus.Waiting.value
+        # task_conf['CrawlerInstance'] = None
+        self.TaskQueue.put(task_conf)
+        self.log.info('{}, {}已添加到任务队列'.format(task_conf.get('TaskId'), task_conf.get('TaskName')))
+
+    def cancel_one_task(self, ):
         pass
 
-    def kill_one_task(self, ):
-        pass
+    def get_task_status(self):
 
-    def get_task_status(self, task_id):
         pass
 
     def _async_raise(self, tid, exctype):
@@ -74,9 +136,54 @@ class Task(object):
             ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, None)
             raise SystemError("PyThreadState_SetAsyncExc failed")
 
-    def get_task_working(self, ):
-        pass
+    def get_task_state(self, task_id):
+        task_state = {}
+        for _task in self.TaskQueue:
+            if task_id == _task.get('TaskId', ''):
+                task_state.update(_task)
+                task_state.pop('CrawlerInstance')
+                return task_state
+        self.__change_task_state()
+        for _task in self.TaskList:
+            if task_id == _task.get('TaskId', ''):
+                task_state.update(_task)
+                task_state.pop('CrawlerInstance')
+                if TaskStatus(_task.get('TaskState')) == TaskStatus.CrawlerFailed or TaskStatus(_task.get(
+                        'TaskState')) == TaskStatus.SaverFailed:
+                    self.TaskList.remove(_task)
+                return task_state
+
+    def __task_exception_handle(self, task_conf: dict):
+        task_conf.update({'CrawlerInstance': None})
+
+    def __change_task_state(self):
+        for _task in self.TaskList:
+            _task = dict(_task)
+            task_instance = _task.get('CrawlerInstance', None)
+            if not task_instance:
+                self.log.error('{} 该任务没有获取到实例'.format(_task))
+                continue
+            state = task_instance.get_state()
+            if state.value == CrawlerStatus.CrawlerException.value or state.value == SaverStatus.SaverException.value:
+                if state.value == 2:
+                    _task.update({'TaskState': TaskStatus.CrawlerFailed.value})
+                else:
+                    _task.update({'TaskState': TaskStatus.SaverFailed.value})
+                self.__task_exception_handle(_task)
+                continue
+            if state.value < CrawlerStatus.CrawlerEnd.value:
+                _task.update({'TaskState': TaskStatus.CrawlerWorking.value})
+            elif state.value < SaverStatus.SavererEnd.value:
+                _task.update({'TaskState': TaskStatus.SaverWorking.value})
+            else:
+                _task.update({'TaskState': TaskStatus.SaverSuccess.value})
 
 
 if __name__ == '__main__':
-    Task().start_one_task(TaskConfig)
+    task = Task()
+    t = threading.Thread(target=task.main)
+    t.name = 'MainTheard'
+    t.setDaemon(True)
+    t.start()
+    time.sleep(2)
+    task.add_one_task(TaskConfig)

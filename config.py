@@ -29,14 +29,14 @@ SAY_CONFIG = {
 
 node_config = {
     "request": {
-        "MaxTaskCount": 2,
+        "MaxTaskCount": 10,
 
     },
     "android": {
         "MaxTaskCount": 1,
     },
     "brower": {
-        "MaxTaskCount": 3,
+        "MaxTaskCount": 5,
         "ChromeVersion": "",
     }
 }
