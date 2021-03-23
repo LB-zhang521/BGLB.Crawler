@@ -76,7 +76,7 @@ class Task(object):
             'brower': 0,
             'android': 0
         }
-        for item in self.TaskWaittingList:
+        for item in self.TaskWorkingList:
             crawler_type = item.get('CrawlerConfig').get('CrawlerType')
             if task_type is crawler_type:
                 task_count[crawler_type] += 1
