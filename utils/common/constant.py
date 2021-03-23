@@ -21,7 +21,7 @@ def _chromedriver():
     return os.path.join(BASE_DIR, r'crawler\chromedriver\chromedriver')
 
 
-def _abdexecpath():
+def _adbexecpath():
     """
     abd 执行路径
     :return:
