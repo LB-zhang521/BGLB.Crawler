@@ -99,8 +99,7 @@ class Task(object):
             'brower':  0,
             'android': 0
         }
-        # for task in self.TaskQueue:
-        #     task_detail_dict[task.get('CrawlerConfig', {}).get('CrawlerType')] += 1
+
         for k, v in task_detail_dict.items():
             if v > 0:
                 print('{}任务有{}个 正在排队'.format(k, v))
