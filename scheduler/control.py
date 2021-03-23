@@ -20,8 +20,10 @@ class Task(object):
     def __init__(self):
         self.TaskQueue = None
         self.log = BaseLog('scheduler_control')
-        self.TaskList = []
-        self.__InitTaskQueue()
+        self.TaskWorkingList = []
+        self.TaskWaittingList = []
+        self.__MaxTasksCount = self.get_max_task_count()
+        self.TaskQueue = queue.LifoQueue(self.__MaxTasksCount)
 
     def start_one_task(self, taskConfig: dict):
         """
@@ -34,7 +36,7 @@ class Task(object):
         task_name = taskConfig.get('TaskName')
         task_id = taskConfig.get('TaskId')
         self.log.info('{}, {}开始启动'.format(task_id, task_name))
-        crawle_cls = self.get_crawle_class(crawler_config)
+        crawle_cls = self.get_crawler_class(crawler_config)
         if crawle_cls:
             try:
                 crawler_instance = crawle_cls(crawler_config)
@@ -46,18 +48,48 @@ class Task(object):
         else:
             taskConfig['TaskState'] = TaskStatus.CrawlerNotFound.value
 
-    def __InitTaskQueue(self):
-        if self.TaskQueue is None:
-            max = 0
-            for k, v in node_config.items():
-                max += int(v.get('MaxTaskCount'))
-            self.TaskQueue = queue.LifoQueue(max)
+    @staticmethod
+    def get_max_task_count():
+        max = 0
+        for k, v in node_config.items():
+            max += int(v.get('MaxTaskCount'))
+        return max
+
+    def get_work_task_count(self, task_type=None) -> dict:
+        task_count = {
+            'request': 0,
+            'brower': 0,
+            'android': 0
+        }
+        for item in self.TaskWorkingList:
+            crawler_type = item.get('CrawlerConfig').get('CrawlerType')
+            if task_type is crawler_type:
+                task_count[crawler_type] += 1
+            else:
+                task_count[crawler_type] += 1
+
+        return task_count
+
+    def get_wait_task_count(self, task_type=None) -> dict:
+        task_count = {
+            'request': 0,
+            'brower': 0,
+            'android': 0
+        }
+        for item in self.TaskWaittingList:
+            crawler_type = item.get('CrawlerConfig').get('CrawlerType')
+            if task_type is crawler_type:
+                task_count[crawler_type] += 1
+            else:
+                task_count[crawler_type] += 1
+
+        return task_count
 
     def main(self):
         while True:
             if not self.TaskQueue.empty():
                 task_conf = self.TaskQueue.get()
-                self.TaskList.append(task_conf)
+                self.TaskWorkingList.append(task_conf)
                 self.start_one_task(task_conf)
             self.get_all_tasks_detail()
 
@@ -79,7 +111,7 @@ class Task(object):
             'brower': 0,
             'android': 0
         }
-        for task in self.TaskList:
+        for task in self.TaskWorkingList:
             print(task)
             task = dict(task)
             crawler_type = task.get('CrawlerConfig').get('CrawlerType')
@@ -90,7 +122,7 @@ class Task(object):
             else:
                 print('{}任务空闲'.format(k))
 
-    def get_crawle_class(self, crawler_config: dict):
+    def get_crawler_class(self, crawler_config: dict):
         """
             获取爬虫实例
         :param crawler_config:
@@ -121,7 +153,8 @@ class Task(object):
 
         pass
 
-    def _async_raise(self, tid, exctype):
+    @staticmethod
+    def _async_raise(tid, exctype):
         """https://stackoverflow.com/questions/323972/is-there-any-way-to-kill-a-thread"""
         """raises the exception, performs cleanup if needed"""
         tid = ctypes.c_long(tid)
@@ -144,20 +177,20 @@ class Task(object):
                 task_state.pop('CrawlerInstance')
                 return task_state
         self.__change_task_state()
-        for _task in self.TaskList:
+        for _task in self.TaskWorkingList:
             if task_id == _task.get('TaskId', ''):
                 task_state.update(_task)
                 task_state.pop('CrawlerInstance')
                 if TaskStatus(_task.get('TaskState')) == TaskStatus.CrawlerFailed or TaskStatus(_task.get(
                         'TaskState')) == TaskStatus.SaverFailed:
-                    self.TaskList.remove(_task)
+                    self.TaskWorkingList.remove(_task)
                 return task_state
 
     def __task_exception_handle(self, task_conf: dict):
         task_conf.update({'CrawlerInstance': None})
 
     def __change_task_state(self):
-        for _task in self.TaskList:
+        for _task in self.TaskWorkingList:
             _task = dict(_task)
             task_instance = _task.get('CrawlerInstance', None)
             if not task_instance:
@@ -179,11 +212,11 @@ class Task(object):
                 _task.update({'TaskState': TaskStatus.SaverSuccess.value})
 
 
-if __name__ == '__main__':
-    task = Task()
-    t = threading.Thread(target=task.main)
-    t.name = 'MainTheard'
-    t.setDaemon(True)
-    t.start()
-    time.sleep(2)
-    task.add_one_task(TaskConfig)
+
+task = Task()
+t = threading.Thread(target=task.main)
+t.name = 'MainTheard'
+t.setDaemon(True)
+t.start()
+time.sleep(2)
+task.add_one_task(TaskConfig)
