@@ -4,6 +4,7 @@
 # @Software : PyCharm
 import json
 import os
+import time
 from threading import Thread
 import execjs
 from abc import abstractmethod
@@ -72,11 +73,12 @@ class _CrawlerBase(Thread):
 
     @abstractmethod
     def spider(self):
-        self.log.warn('爬虫方法未实现')
+        self.log.warn('爬虫方法未实现', say=True)
+        # time.sleep(0.5)
 
     @abstractmethod
     def saver(self):
-        self.log.warn('数据存储方法未实现')
+        self.log.warn('数据存储方法未实现', say=True)
 
     def run(self) -> None:
         """

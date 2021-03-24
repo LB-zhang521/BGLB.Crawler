@@ -5,11 +5,11 @@
 
 import os
 import time
-
+from scheduler.control import task
 
 
 TaskConfig = {
-     "TaskId": "13465786",
+    "TaskId": "13465786",
     "TaskName": "测试百度",
     "CrawlerConfig": {
         "CrawlerName": "baidu",
@@ -23,6 +23,7 @@ TaskConfig = {
 
 
 def main():
+    task.start_one_task(TaskConfig)
     pass
 
 

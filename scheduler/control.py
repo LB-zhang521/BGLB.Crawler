@@ -9,7 +9,7 @@ import threading
 import time
 
 from logger import BaseLog
-from main_debug import TaskConfig
+# from main_debug import TaskConfig
 from config import node_config
 from scheduler.status_code import CrawlerStatus, TaskStatus, SaverStatus
 import queue
@@ -18,12 +18,11 @@ import queue
 class Task(object):
 
     def __init__(self):
-        self.TaskQueue = None
         self.log = BaseLog('scheduler_control')
         self.TaskWorkingList = []
         self.TaskWaittingList = []
         self.__MaxTasksCount = self.get_max_task_count()
-        self.TaskQueue = queue.LifoQueue(self.__MaxTasksCount)
+        # self.TaskQueue = queue.LifoQueue(self.__MaxTasksCount)
 
     def start_one_task(self, taskConfig: dict):
         """
@@ -45,6 +44,9 @@ class Task(object):
             except Exception:
                 self.log.error('{}爬虫实例化失败'.format(crawler_config))
                 taskConfig['TaskState'] = TaskStatus.CrawlerInstanceError.value
+            finally:
+                self.log.warn('清理')
+
         else:
             taskConfig['TaskState'] = TaskStatus.CrawlerNotFound.value
 
@@ -87,10 +89,11 @@ class Task(object):
 
     def main(self):
         while True:
-            if not self.TaskQueue.empty():
-                task_conf = self.TaskQueue.get()
+            for task_conf in self.TaskWaittingList:
                 self.TaskWorkingList.append(task_conf)
+                task_conf.update('')
                 self.start_one_task(task_conf)
+                self.TaskWaittingList.remove(task_conf)
             self.get_all_tasks_detail()
 
     def get_all_tasks_detail(self):
@@ -211,11 +214,11 @@ class Task(object):
                 _task.update({'TaskState': TaskStatus.SaverSuccess.value})
 
 
-
 task = Task()
-t = threading.Thread(target=task.main)
-t.name = 'MainTheard'
-t.setDaemon(True)
-t.start()
-time.sleep(2)
-task.add_one_task(TaskConfig)
+# t = threading.Thread(target=task.main)
+# t.name = 'MainTheard'
+# t.setDaemon(True)
+# t.start()
+# time.sleep(2)
+# task.add_one_task(TaskConfig)
+# task.start_one_task(TaskConfig)

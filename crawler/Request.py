@@ -41,14 +41,9 @@ class CrawlerRequest(_CrawlerBase):
         """
         super()._load_cookie(cookies)
 
-    @abstractmethod
-    def spider(self):
-        self.log.warn('爬虫主方法未实现', say=True)
-
     def run(self) -> None:
         super().run()
 
     def __del__(self):
         if self.session:
             self.session.close()
-        self.log.info('爬虫程序运行完毕', say=True)

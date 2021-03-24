@@ -31,7 +31,7 @@ def _adbexecpath():
 
 class StaticPath(object):
     chromedriver = _chromedriver()
-    adbexecpath = _abdexecpath()
+    adbexecpath = _adbexecpath()
 
 
 if __name__ == '__main__':

@@ -36,7 +36,7 @@ node_config = {
         "MaxTaskCount": 1,
     },
     "brower": {
-        "MaxTaskCount": 5,
+        "MaxTaskCount": 1,
         "ChromeVersion": "",
     }
 }

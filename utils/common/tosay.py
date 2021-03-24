@@ -91,3 +91,5 @@ class Tosay(threading.Thread):
 
     def kill(self):
         self.__is_kill = True
+
+
