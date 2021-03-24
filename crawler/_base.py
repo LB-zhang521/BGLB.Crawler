@@ -73,12 +73,12 @@ class _CrawlerBase(Thread):
 
     @abstractmethod
     def spider(self):
-        self.log.warn('爬虫方法未实现', say=True)
+        self.log.warn('爬虫方法未实现')
         # time.sleep(0.5)
 
     @abstractmethod
     def saver(self):
-        self.log.warn('数据存储方法未实现', say=True)
+        self.log.warn('数据存储方法未实现')
 
     def run(self) -> None:
         """

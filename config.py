@@ -22,11 +22,6 @@ LOG_CONFIG = {
     'LOG_ROOT_DIR': os.path.join(BASE_DIR, 'log')
 }
 
-SAY_CONFIG = {
-    "issay": True,
-    'rate': 500,  # 每分钟播报字数
-}
-
 node_config = {
     "request": {
         "MaxTaskCount": 10,

@@ -44,9 +44,6 @@ class Task(object):
             except Exception:
                 self.log.error('{}爬虫实例化失败'.format(crawler_config))
                 taskConfig['TaskState'] = TaskStatus.CrawlerInstanceError.value
-            finally:
-                self.log.warn('清理')
-
         else:
             taskConfig['TaskState'] = TaskStatus.CrawlerNotFound.value
 

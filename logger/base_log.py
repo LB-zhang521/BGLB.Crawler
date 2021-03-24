@@ -9,9 +9,11 @@ import re
 import sys
 import threading
 from logging.handlers import TimedRotatingFileHandler
+
 import colorlog
+
 from config import DEBUG, LOG_CONFIG
-from utils.common.tosay import Tosay
+
 """
     日志记录
     ./log/[crawer]/[spyider]/[lever.log]
@@ -22,15 +24,12 @@ from utils.common.tosay import Tosay
 """
 
 lock = threading.Lock()
-_say_thread = Tosay()
-if not _say_thread.is_alive():
-    _say_thread.start()
 
 
 class BaseLog(object):
-
     LOG_CONFIG['LOG_ROOT_DIR'] = LOG_CONFIG['LOG_ROOT_DIR']
     LOG_CONFIG['LOG_COLOR_CONFIG'] = LOG_CONFIG['LOG_COLOR_CONFIG']
+
     def __init__(self, _module, spider=''):
 
         self.__log_dir = os.path.join(LOG_CONFIG['LOG_ROOT_DIR'], _module, spider)
@@ -49,9 +48,7 @@ class BaseLog(object):
         # 记录起来，用于回收
         self.__stream_console_handler = None
         self.__file_handler_dict = {}
-        self.__say_thread = None
-        if not self.__say_thread:
-            self.__say_thread = _say_thread
+
         # 一个logger对应多个handler
         self.__logger = logging.getLogger(self.__log_name)
         if DEBUG:
@@ -63,8 +60,6 @@ class BaseLog(object):
     def __del__(self):
         try:
             self.__delete_logger_handlers()
-            if self.__say_thread:
-                self.__say_thread.kill()
         except Exception as e:
             raise e
 
@@ -142,9 +137,6 @@ class BaseLog(object):
             'DEBUG': 10,
             'NOTSET': 0,
         }
-        if kwargs.get('say', False):
-            self.__say_thread.push_text(message, kwargs.get('saylever', ''))
-
         lock.acquire(timeout=.5)
         self.__logger.log(LEVER[lever], message)
         if lock.locked():
@@ -179,4 +171,3 @@ class BaseLog(object):
         else:
             msg = '{}'.format(message)
         return msg
-
