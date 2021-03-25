@@ -5,14 +5,17 @@
 import ctypes
 import importlib
 import inspect
+import os
+import socket
 import threading
 import time
+
+import psutil
 
 from logger import BaseLog
 # from main_debug import TaskConfig
 from config import node_config
 from scheduler.status_code import CrawlerStatus, TaskStatus, SaverStatus
-import queue
 
 
 class Task(object):
@@ -30,6 +33,7 @@ class Task(object):
         :return:
         """
         # self.tasksSet.add(taskConfig)
+        self.TaskWorkingList.append(taskConfig)
         taskConfig.update({'TaskState': TaskStatus.Init.value})
         crawler_config = taskConfig.get('CrawlerConfig', {})
         task_name = taskConfig.get('TaskName')
@@ -42,7 +46,7 @@ class Task(object):
                 crawler_instance.start()
                 taskConfig['CrawlerInstance'] = crawler_instance
             except Exception:
-                self.log.error('{}爬虫实例化失败'.format(crawler_config))
+                self.log.error('{}爬虫实例化失败, 错误原因如下'.format(crawler_config))
                 taskConfig['TaskState'] = TaskStatus.CrawlerInstanceError.value
         else:
             taskConfig['TaskState'] = TaskStatus.CrawlerNotFound.value
@@ -57,7 +61,7 @@ class Task(object):
     def get_work_task_count(self, task_type=None) -> dict:
         task_count = {
             'request': 0,
-            'brower': 0,
+            'browser': 0,
             'android': 0
         }
         for item in self.TaskWorkingList:
@@ -72,10 +76,10 @@ class Task(object):
     def get_wait_task_count(self, task_type=None) -> dict:
         task_count = {
             'request': 0,
-            'brower': 0,
+            'browser': 0,
             'android': 0
         }
-        for item in self.TaskWorkingList:
+        for item in self.TaskWaittingList:
             crawler_type = item.get('CrawlerConfig').get('CrawlerType')
             if task_type is crawler_type:
                 task_count[crawler_type] += 1
@@ -86,40 +90,30 @@ class Task(object):
 
     def main(self):
         while True:
-            for task_conf in self.TaskWaittingList:
-                self.TaskWorkingList.append(task_conf)
-                task_conf.update('')
-                self.start_one_task(task_conf)
-                self.TaskWaittingList.remove(task_conf)
-            self.get_all_tasks_detail()
+            if self.TaskWaittingList:
+                for task_conf in self.TaskWaittingList:
+                    self.TaskWaittingList.remove(task_conf)
+                    self.start_one_task(task_conf)
+            else:
+                self.get_all_tasks_detail()
+            # time.sleep(2)
 
     def get_all_tasks_detail(self):
-        task_detail_dict = {
-            'request':  0,
-            'brower':  0,
-            'android': 0
-        }
+        """
+            打印所有任务状态
+        :return:
+        """
+        task_detail_dict = {}
+        work_task = self.get_work_task_count()
+        task_detail_dict.update(work_task)
+        for k, v in task_detail_dict.items():
+            print('{}任务有{}个 正在进行'.format(k, v))
+        task_detail_dict = {}
+        wait_task = self.get_wait_task_count()
+        task_detail_dict.update(wait_task)
 
         for k, v in task_detail_dict.items():
-            if v > 0:
-                print('{}任务有{}个 正在排队'.format(k, v))
-            else:
-                print('{}任务空闲'.format(k))
-        task_detail_dict = {
-            'request': 0,
-            'brower': 0,
-            'android': 0
-        }
-        for task in self.TaskWorkingList:
-            print(task)
-            task = dict(task)
-            crawler_type = task.get('CrawlerConfig').get('CrawlerType')
-            task_detail_dict[crawler_type] += 1
-        for k, v in task_detail_dict.items():
-            if v > 0:
-                print('{}任务有{}个 正在进行'.format(k, v))
-            else:
-                print('{}任务空闲'.format(k))
+            print('{}任务有{}个 排队'.format(k, v))
 
     def get_crawler_class(self, crawler_config: dict):
         """
@@ -141,12 +135,18 @@ class Task(object):
 
     def add_one_task(self, task_conf):
         task_conf['TaskState'] = TaskStatus.Waiting.value
-        # task_conf['CrawlerInstance'] = None
-        self.TaskQueue.put(task_conf)
-        self.log.info('{}, {}已添加到任务队列'.format(task_conf.get('TaskId'), task_conf.get('TaskName')))
+        task_conf['CrawlerInstance'] = None
+        self.TaskWaittingList.append(task_conf)
+        # self.log.info('{}, {}已添加到任务队列'.format(task_conf.get('TaskId'), task_conf.get('TaskName')))
 
-    def cancel_one_task(self, ):
-        pass
+    def cancel_one_task(self, task_id):
+        for _task in self.TaskWaittingList:
+            if _task.get('TaskId') == task_id:
+                _task.update({'CrawlerState': TaskStatus.Cancel.value})
+
+        for _task in self.TaskWorkingList:
+            if _task.get('TaskId') == task_id:
+                _task.update({'CrawlerState': TaskStatus.Cancel.value})
 
     def get_task_status(self):
 
@@ -170,23 +170,51 @@ class Task(object):
 
     def get_task_state(self, task_id):
         task_state = {}
-        for _task in self.TaskQueue:
+        for _task in self.TaskWaittingList:
             if task_id == _task.get('TaskId', ''):
                 task_state.update(_task)
                 task_state.pop('CrawlerInstance')
                 return task_state
         self.__change_task_state()
-        for _task in self.TaskWorkingList:
-            if task_id == _task.get('TaskId', ''):
-                task_state.update(_task)
-                task_state.pop('CrawlerInstance')
-                if TaskStatus(_task.get('TaskState')) == TaskStatus.CrawlerFailed or TaskStatus(_task.get(
-                        'TaskState')) == TaskStatus.SaverFailed:
-                    self.TaskWorkingList.remove(_task)
-                return task_state
 
     def __task_exception_handle(self, task_conf: dict):
-        task_conf.update({'CrawlerInstance': None})
+        self.__task_clear(task_conf)
+
+    def __task_clear(self, task_conf):
+
+        ins = task_conf.get('CrawlerInstance')
+        parent_cls_str = str(ins.__class__.__bases__[0]).lower()
+        if 'request' in parent_cls_str:
+            self.__request_task_exception(ins)
+        if 'browser' in parent_cls_str:
+            self.__browser_task_exception(ins)
+        if 'android' in parent_cls_str:
+            self.__android_task_exception(ins)
+        ins.__del__()
+        del task_conf['CrawlerInstance']
+
+    def __request_task_exception(self, ins):
+        """
+        request-task clear
+        :return:
+        """
+        if ins.session:
+            ins.session.close()
+
+    def __browser_task_exception(self, ins):
+        """
+        brower-task clear
+        :return:
+        """
+        if ins.driver:
+            ins.driver.quit()
+
+    def __android_task_exception(self, ins):
+        """
+        android-task clear
+        :return:
+        """
+        pass
 
     def __change_task_state(self):
         for _task in self.TaskWorkingList:
@@ -196,6 +224,8 @@ class Task(object):
                 self.log.error('{} 该任务没有获取到实例'.format(_task))
                 continue
             state = task_instance.get_state()
+            if state == TaskStatus.Cancel.value:
+                self.__task_clear(_task)
             if state.value == CrawlerStatus.CrawlerException.value or state.value == SaverStatus.SaverException.value:
                 if state.value == 2:
                     _task.update({'TaskState': TaskStatus.CrawlerFailed.value})
@@ -212,10 +242,15 @@ class Task(object):
 
 
 task = Task()
-# t = threading.Thread(target=task.main)
-# t.name = 'MainTheard'
-# t.setDaemon(True)
-# t.start()
-# time.sleep(2)
-# task.add_one_task(TaskConfig)
-# task.start_one_task(TaskConfig)
+
+def main():
+
+    t = threading.Thread(target=task.main)
+    t.name = 'MainTheard'
+    t.setDaemon(True)
+    t.start()
+    # t.join()
+
+
+
+main()

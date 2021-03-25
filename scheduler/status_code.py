@@ -9,6 +9,7 @@ class TaskStatus(Enum):
 
     Waiting = '排队中'
     Init = '待处理'
+    Cancel = '取消'
     CrawlerWorking = '数据抓取中'
     CrawlerSuccess = '数据抓取完成'
     SaverWorking = '数据存储中'
