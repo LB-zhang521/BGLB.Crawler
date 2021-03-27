@@ -51,8 +51,7 @@ class _SaverBase(Thread):
     def save_to_csv(self):
         """"""
 
-    def save_json_data(self):
-        pass
+
 
 
 class SaverWithFile(_SaverBase):

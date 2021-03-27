@@ -9,6 +9,7 @@ import os
 import socket
 import threading
 import time
+import traceback
 
 import psutil
 
@@ -16,8 +17,10 @@ from logger import BaseLog
 # from main_debug import TaskConfig
 from config import node_config
 from scheduler.status_code import CrawlerStatus, TaskStatus, SaverStatus
+from utils.util import singleton
 
 
+@singleton
 class Task(object):
 
     def __init__(self):
@@ -27,29 +30,29 @@ class Task(object):
         self.__MaxTasksCount = self.get_max_task_count()
         # self.TaskQueue = queue.LifoQueue(self.__MaxTasksCount)
 
-    def start_one_task(self, taskConfig: dict):
+    def start_one_task(self, task_config: dict):
         """
-        :param taskConfig:
+        :param task_config:
         :return:
         """
         # self.tasksSet.add(taskConfig)
-        self.TaskWorkingList.append(taskConfig)
-        taskConfig.update({'TaskState': TaskStatus.Init.value})
-        crawler_config = taskConfig.get('CrawlerConfig', {})
-        task_name = taskConfig.get('TaskName')
-        task_id = taskConfig.get('TaskId')
+        self.TaskWorkingList.append(task_config)
+        task_config.update({'TaskState': TaskStatus.Init.value})
+        crawler_config = task_config.get('CrawlerConfig', {})
+        task_name = task_config.get('TaskName')
+        task_id = task_config.get('TaskId')
         self.log.info('{}, {}开始启动'.format(task_id, task_name))
         crawle_cls = self.get_crawler_class(crawler_config)
         if crawle_cls:
             try:
-                crawler_instance = crawle_cls(crawler_config)
-                crawler_instance.start()
-                taskConfig['CrawlerInstance'] = crawler_instance
-            except Exception:
-                self.log.error('{}爬虫实例化失败, 错误原因如下'.format(crawler_config))
-                taskConfig['TaskState'] = TaskStatus.CrawlerInstanceError.value
+                crawler_theard = crawle_cls(crawler_config)
+                crawler_theard.start()
+                task_config['CrawlerInstance'] = crawler_theard
+            except Exception as e:
+                self.log.error('{}爬虫实例化失败, 错误原因如下:{}'.format(crawler_config, traceback.format_exc()))
+                task_config['TaskState'] = TaskStatus.CrawlerInstanceError.value
         else:
-            taskConfig['TaskState'] = TaskStatus.CrawlerNotFound.value
+            task_config['TaskState'] = TaskStatus.CrawlerNotFound.value
 
     @staticmethod
     def get_max_task_count():
@@ -147,10 +150,9 @@ class Task(object):
         for _task in self.TaskWorkingList:
             if _task.get('TaskId') == task_id:
                 _task.update({'CrawlerState': TaskStatus.Cancel.value})
-
-    def get_task_status(self):
-
-        pass
+                ins = _task.get('CrawlerInstance', None)
+                if ins:
+                    self._async_raise(ins.ident, SystemExit)
 
     @staticmethod
     def _async_raise(tid, exctype):
@@ -168,14 +170,25 @@ class Task(object):
             ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, None)
             raise SystemError("PyThreadState_SetAsyncExc failed")
 
-    def get_task_state(self, task_id):
-        task_state = {}
+    def get_task_state(self, task_id=None) ->list:
+        task_state_list = []
+        self.__update_task_state()
         for _task in self.TaskWaittingList:
+            task_state = {}
+            task_state.update(_task)
+            task_state_list.append(_task)
+            del task_state['CrawlerInstance']
             if task_id == _task.get('TaskId', ''):
-                task_state.update(_task)
-                task_state.pop('CrawlerInstance')
-                return task_state
-        self.__change_task_state()
+                return task_state_list
+        for _task in self.TaskWaittingList:
+            task_state = {}
+            task_state.update(_task)
+            task_state_list.append(_task)
+            del task_state['CrawlerInstance']
+            if task_id == _task.get('TaskId', ''):
+                return task_state_list
+
+        return task_state_list
 
     def __task_exception_handle(self, task_conf: dict):
         self.__task_clear(task_conf)
@@ -216,7 +229,7 @@ class Task(object):
         """
         pass
 
-    def __change_task_state(self):
+    def __update_task_state(self):
         for _task in self.TaskWorkingList:
             _task = dict(_task)
             task_instance = _task.get('CrawlerInstance', None)
@@ -226,6 +239,7 @@ class Task(object):
             state = task_instance.get_state()
             if state == TaskStatus.Cancel.value:
                 self.__task_clear(_task)
+
             if state.value == CrawlerStatus.CrawlerException.value or state.value == SaverStatus.SaverException.value:
                 if state.value == 2:
                     _task.update({'TaskState': TaskStatus.CrawlerFailed.value})
@@ -240,17 +254,30 @@ class Task(object):
             else:
                 _task.update({'TaskState': TaskStatus.SaverSuccess.value})
 
+    def __task_done_handle(self):
+        """
+        任务正常结束时
+        :return:
+        """
+        """
+        上传任务日志
+        上传数据
+        """
 
-task = Task()
-
-def main():
-
-    t = threading.Thread(target=task.main)
-    t.name = 'MainTheard'
-    t.setDaemon(True)
-    t.start()
-    # t.join()
+# def main():
+#
+#     t = threading.Thread(target=task.main)
+#     t.name = 'MainTheard'
+#     t.setDaemon(True)
+#     t.start()
+#     # t.join()
 
 
-
-main()
+if __name__ == '__main__':
+    d1 = {}
+    d2 = {'1': 2}
+    d1.update(d2)
+    print(d1)
+    del d1['1']
+    print(d1,d2)
+    pass

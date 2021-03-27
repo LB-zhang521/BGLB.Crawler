@@ -9,8 +9,19 @@
 import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+import time
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DEBUG = True
+
+CODE_TEMPLATE = {
+    'NOTE': {
+        '': 'utf-8',
+        'Time': '%Y-%m-%d %H:%M:%S',
+        'Author': 'BGLB',
+        'Software': 'PyCharm'
+    }
+}
 
 LOG_CONFIG = {
     'LOG_COLOR_CONFIG': {
@@ -23,15 +34,17 @@ LOG_CONFIG = {
 }
 
 node_config = {
-    "request": {
-        "MaxTaskCount": 10,
+    'request': {
+        'MaxTaskCount': 10,
 
     },
-    "android": {
-        "MaxTaskCount": 1,
+    'android': {
+        'MaxTaskCount': 1,
     },
-    "brower": {
-        "MaxTaskCount": 1,
-        "ChromeVersion": "",
+    'brower': {
+        'MaxTaskCount': 1,
+        'ChromeVersion': "",
     }
 }
+if __name__ == '__main__':
+    print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
