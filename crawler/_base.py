@@ -80,6 +80,15 @@ class _CrawlerBase(Thread):
     def saver(self):
         self.log.warn('数据存储方法未实现')
 
+    def save_to_csv(self, data):
+        pass
+
+    def save_to_json(self, data):
+        pass
+
+    def get_state(self):
+        return self._state
+
     def run(self) -> None:
         """
             爬虫主线程

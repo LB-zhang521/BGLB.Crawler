@@ -5,7 +5,7 @@
 
 import os
 import time
-from scheduler.control import task
+from scheduler.control import Task
 
 
 TaskConfig = {
@@ -23,7 +23,7 @@ TaskConfig = {
 
 
 def _main():
-    task.add_one_task(TaskConfig)
+    Task().add_one_task(TaskConfig)
     pass
 
 # main()

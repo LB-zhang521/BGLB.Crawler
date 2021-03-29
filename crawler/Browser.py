@@ -86,3 +86,9 @@ class CrawlerBrowser(_CrawlerBase):
             self.driver.quit()
             self.driver = None
 
+    def __del__(self):
+        if self.driver:
+            try:
+                self.driver.close()
+            except Exception:
+                self.log.error('close driver 失败')
