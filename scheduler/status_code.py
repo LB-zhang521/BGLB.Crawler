@@ -29,7 +29,7 @@ class SaverStatus(IntEnum):
     SaverStart = 4
     Savering = 5
     SaverException = 6
-    SavererEnd = 7
+    SaverEnd = 7
 
 
 if __name__ == '__main__':

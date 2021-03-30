@@ -107,7 +107,7 @@ class _CrawlerBase(Thread):
             self._state = SaverStatus.Savering
             self.log.info('开始保存数据')
             self.saver()
-            self._state = SaverStatus.SavererEnd
+            self._state = SaverStatus.SaverEnd
         except Exception:
             self.log.error(traceback.format_exc(), 'error')
             self._state = SaverStatus.SaverException

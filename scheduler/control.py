@@ -27,6 +27,7 @@ class Task(object):
         self.TaskWorkingList = []
         self.TaskWaittingList = []
         self.__MaxTasksCount = self.get_max_task_count()
+        self.isworking = False
         # self.TaskQueue = queue.LifoQueue(self.__MaxTasksCount)
 
     def start_one_task(self, task_config: dict):
@@ -54,13 +55,15 @@ class Task(object):
             task_config['TaskState'] = TaskStatus.CrawlerNotFound.value
 
     @staticmethod
-    def get_max_task_count():
+    def get_max_task_count(task_type=None):
         max = 0
         for k, v in node_config.items():
             max += int(v.get('MaxTaskCount'))
+            if v is task_type:
+                return v
         return max
 
-    def get_work_task_count(self, task_type=None) -> dict:
+    def get_work_task_count(self) -> dict:
         task_count = {
             'request': 0,
             'browser': 0,
@@ -68,14 +71,11 @@ class Task(object):
         }
         for item in self.TaskWorkingList:
             crawler_type = item.get('CrawlerConfig').get('CrawlerType')
-            if task_type is crawler_type:
-                task_count[crawler_type] += 1
-            else:
-                task_count[crawler_type] += 1
+            task_count[crawler_type] += 1
 
         return task_count
 
-    def get_wait_task_count(self, task_type=None) -> dict:
+    def get_wait_task_count(self) -> dict:
         task_count = {
             'request': 0,
             'browser': 0,
@@ -83,29 +83,29 @@ class Task(object):
         }
         for item in self.TaskWaittingList:
             crawler_type = item.get('CrawlerConfig').get('CrawlerType')
-            if task_type is crawler_type:
-                task_count[crawler_type] += 1
-            else:
-                task_count[crawler_type] += 1
+            task_count[crawler_type] += 1
 
         return task_count
 
     def main(self):
         while True:
+            self.isworking = True
+            self.update = False
             if self.TaskWaittingList:
                 for task_conf in self.TaskWaittingList:
                     self.TaskWaittingList.remove(task_conf)
                     self.start_one_task(task_conf)
             else:
                 self.get_all_tasks_detail()
-            if self.TaskWorkingList:
+            if self.TaskWorkingList and not self.update:
                 self.update_task_state()
                 # time.sleep(2)
             time.sleep(2)
 
     def daemon(self) -> threading.Thread:
         t = threading.Thread(target=self.main)
-        t.setDaemon(True)
+
+        # t.setDaemon(True)
         t.name = "Daemon"
         # t.start()
         return t
@@ -151,8 +151,8 @@ class Task(object):
     def add_one_task(self, task_conf) -> bool:
         if self.TaskWaittingList:
             crawler_type = task_conf.get('CrawlerConfig', {}).get('CrawlerType', '')
-            currect_type_count = self.get_wait_task_count(crawler_type)
-            if currect_type_count[crawler_type] > (self.get_max_task_count() - 1) / 2:
+            currect_type_count = self.get_work_task_count()
+            if currect_type_count[crawler_type] > self.get_max_task_count(crawler_type):
                 print('任务饱和。。。。不再添加！')
                 return False
         task_conf['TaskState'] = TaskStatus.Waiting.value
@@ -250,15 +250,16 @@ class Task(object):
 
     def update_task_state(self):
         for _task in self.TaskWorkingList:
-            _task = dict(_task)
             task_instance = _task.get('CrawlerInstance', None)
             if not task_instance:
                 self.log.error('{} 该任务没有获取到实例'.format(_task))
                 continue
             if _task.get('TaskState') == TaskStatus.Cancel.value:
                 self.__task_clear(_task)
-
+            if _task.get('TaskState') == TaskStatus.SaverSuccess.value:
+                self.__task_end_handle(_task)
             state = task_instance.get_state()
+            self.log.info(state.value)
             if state.value == CrawlerStatus.CrawlerException.value or state.value == SaverStatus.SaverException.value:
                 if state.value == 2:
                     _task.update({'TaskState': TaskStatus.CrawlerFailed.value})
@@ -268,12 +269,12 @@ class Task(object):
                 continue
             if state.value < CrawlerStatus.CrawlerEnd.value:
                 _task.update({'TaskState': TaskStatus.CrawlerWorking.value})
-            elif state.value < SaverStatus.SavererEnd.value:
+            elif state.value < SaverStatus.SaverEnd.value:
                 _task.update({'TaskState': TaskStatus.SaverWorking.value})
             else:
                 _task.update({'TaskState': TaskStatus.SaverSuccess.value})
 
-    def __task_end_handle(self):
+    def __task_end_handle(self, task_conf):
         """
         任务正常结束时
         :return:
@@ -282,7 +283,9 @@ class Task(object):
         上传任务日志
         上传数据
         """
-
+        if task_conf in self.TaskWorkingList:
+            self.TaskWorkingList.remove(task_conf)
+            time.sleep(2)
 # def main():
 #
 #     t = threading.Thread(target=task.main)
@@ -293,10 +296,11 @@ class Task(object):
 
 
 if __name__ == '__main__':
-    d1 = {}
-    d2 = {'1': 2}
-    d1.update(d2)
-    print(d1)
-    del d1['1']
+    d1 = [{'1': {'2': 0}}]
+    d2 = {'2': 2}
+    while True:
+        for item in d1:
+            item['1'].update(d2)
+            d1.remove(item)
     print(d1,d2)
     pass

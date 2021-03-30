@@ -107,6 +107,13 @@ def check_if_program_working(name):
     return match_pid
 
 
+def daemon():
+    task = Task()
+    task.daemon().start()
+
+
+def server_http():
+    os.system('start_web.bat')
 
 if __name__ == '__main__':
     args = sys.argv
@@ -130,15 +137,11 @@ if __name__ == '__main__':
                 from services.web import app
                 task = Task()
                 # app.run()
-                # t1 = threading.Thread(target=app.run)
-                t2 = task.daemon()
+                t1 = threading.Thread(target=server_http)
+                t2 = threading.Thread(target=daemon)
+                t1.start()
+                t2.start()
 
-                # t1.start()
-                # t2.start()
-                # app.run(debug=True)
-                # while True:
-                #     pass
-                # time.sleep(.5)
             except Exception:
                 pass
         if args[1] == cmd_support[3]:
@@ -158,4 +161,6 @@ if __name__ == '__main__':
                 # time.sleep(.5)
             except Exception:
                 pass
-        print(str(threading.enumerate()))
+
+
+        # print(str(threading.enumerate()))

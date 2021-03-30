@@ -11,7 +11,8 @@ task = Task()
 
 @app.route('/')
 def index():
-
+    if not task.isworking:
+        task.daemon().start()
     return "admin"
 
 
@@ -29,6 +30,7 @@ def start():
         }
 
     }
+
     task.add_one_task(TaskConfig)
     return 'start'
 
