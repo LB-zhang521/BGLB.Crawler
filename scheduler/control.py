@@ -5,19 +5,16 @@
 import ctypes
 import importlib
 import inspect
-import os
-import socket
 import threading
 import time
 import traceback
 
-import psutil
+import requests
 
-from logger import BaseLog
 from config import node_config
+from logger import BaseLog
 from scheduler.status_code import CrawlerStatus, TaskStatus, SaverStatus
 from utils.util import singleton
-import requests
 
 
 @singleton
@@ -176,7 +173,7 @@ class Task(object):
     def pull_one_task(self):
         while True:
             requests.get('')
-            
+
     @staticmethod
     def _async_raise(tid, exctype):
         """https://stackoverflow.com/questions/323972/is-there-any-way-to-kill-a-thread"""
@@ -290,6 +287,8 @@ class Task(object):
         if task_conf in self.TaskWorkingList:
             self.TaskWorkingList.remove(task_conf)
             time.sleep(2)
+
+
 # def main():
 #
 #     t = threading.Thread(target=task.main)
