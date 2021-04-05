@@ -85,7 +85,7 @@ class Task(object):
 
         return task_count
 
-    def main(self):
+    def _main(self):
         while True:
             self.isworking = True
             if self.TaskWaittingList:
@@ -99,9 +99,8 @@ class Task(object):
                 # time.sleep(2)
             time.sleep(2)
 
-    def daemon(self) -> threading.Thread:
-        t = threading.Thread(target=self.main)
-
+    def main_thread(self) -> threading.Thread:
+        t = threading.Thread(target=self._main)
         # t.setDaemon(True)
         t.name = "Daemon"
         # t.start()

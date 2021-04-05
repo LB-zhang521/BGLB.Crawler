@@ -41,15 +41,21 @@ node_config = {
     'android': {
         'MaxTaskCount': 1,
         'devices': {
-            "SN": '851QFDSJ22TZ6',
+            "serial": '851QFDSJ22TZ6',
             'password': '0000',
+            'screen': True,
+            'enable': True,
+        },
 
-        }
     },
     'brower': {
         'MaxTaskCount': 1,
         'ChromeVersion': "",
     }
 }
+
+
 if __name__ == '__main__':
     print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+    for i in os.environ:
+        print(i)

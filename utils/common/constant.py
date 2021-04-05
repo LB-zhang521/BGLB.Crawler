@@ -29,9 +29,14 @@ def _adbexecpath():
     return os.path.join(BASE_DIR, r'crawler\adb\adb.exe')
 
 
+def _screenpath():
+    return os.path.join(BASE_DIR, r'utils\screen\scrcpy.exe')
+
+
 class StaticPath(object):
     chromedriver = _chromedriver()
     adbexecpath = _adbexecpath()
+    screenpath = _screenpath()
 
 
 if __name__ == '__main__':

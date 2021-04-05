@@ -6,12 +6,12 @@ import os
 import sys
 import threading
 import time
-
-import flask
 import psutil
 
 from scheduler.control import Task
 # from services.web import create_web
+from services.screen import start_screen
+from utils.common.constant import StaticPath
 
 
 def code_template(crawler_type:str):
@@ -80,51 +80,25 @@ def add_spider(project_name, crawler_type=None):
         print('不支持的type')
 
 
-TaskConfig = {
-    "TaskId": "13465786",
-    "TaskName": "测试百度",
-    "CrawlerConfig": {
-        "CrawlerName": "baidu",
-        "CrawlerType": "browser",  # [request, brower, android]
-    },
-    "OrtherConfig": {
-
-    }
-
-}
-task = Task()
-# app = create_web(task)
-
-
-def web_daemon():
+def daemon():
     time.sleep(2)
     while True:
-        web_need_restart = True
-        crawler_need_restart = True
+        screen_need_restart = True
         for proc in psutil.process_iter():
-            prinfo = proc.as_dict(attrs=['exe', 'cmdline', 'pid'])
+            prinfo = proc.as_dict(attrs=['exe', 'pid'])
             # print(prinfo)
             # return
-            if '{}'.format(sys.executable) in str(prinfo['exe']) and prinfo['cmdline'][-1] == 'start_web':
-                web_need_restart = False
-            if '{}'.format(sys.executable) in str(prinfo['exe']) and prinfo['cmdline'][-1] == 'start':
-                crawler_need_restart = False
-        # print("==============================="+str(threading.active_count()))
-        if web_need_restart:
-            os.system('start "start_web"  cmd /c {} ./manage.py start_web'.format(sys.executable))
-            time.sleep(5)
-        if crawler_need_restart:
-            os.system('start "start"  cmd /c {} ./manage.py start'.format(sys.executable))
-            time.sleep(5)
-
-
-def daemon():
-    task.daemon().start()
+            if StaticPath.screenpath == str(prinfo['exe]):
+                screen_need_restart = True
+        print("==============================="+str(threading.active_count()))
+        if not screen_need_restart:
+            threading.Thread(target=start_screen).start()
+            time.sleep(10)
 
 
 if __name__ == '__main__':
     args = sys.argv
-    cmd_support = ['create', 'add', 'start', 'start_web', 'start_crawler']
+    cmd_support = ['create', 'add', 'start', 'start_crawler', 'start_screen']
     default_out = "支持的命令有： 1. create 2. add"
     if len(args) <= 1:
         print(default_out)
@@ -141,19 +115,19 @@ if __name__ == '__main__':
                 add_spider(project_name, crawler_type)
         if args[1] == cmd_support[2]:
             try:
-                # app.run()
-                daemon()
-                t1 = threading.Thread(target=web_daemon)
-                t1.setDaemon(True)
-                t1.start()
-
+                # start_screen()
+                # threading.Thread(target=start_screen).start()
+                Task().main_thread().start()
+                t = threading.Thread(target=daemon)
+                t.setDaemon(True)
+                t.start()
             except Exception:
                 pass
         if args[1] == cmd_support[3]:
             try:
-                # app.run()
-                pass
+                Task().main_thread().start()
             except Exception:
                 pass
-
+        if args[1] == cmd_support[4]:
+            threading.Thread(target=start_screen).start()
 

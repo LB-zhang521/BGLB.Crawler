@@ -12,6 +12,8 @@ from crawler._base import _CrawlerBase
 from config import node_config
 import uiautomator2 as u2
 
+from scheduler.status_code import CrawlerStatus
+
 
 class CrawlerAndroid(_CrawlerBase):
     """
@@ -34,7 +36,7 @@ class CrawlerAndroid(_CrawlerBase):
 
     def _connect_device(self):
         try:
-            self.app_device = u2.connect_usb(self.__device_info.get('SN'))
+            self.app_device = u2.connect_usb(self.__device_info.get('serial'))
             self.app_device.healthcheck()
             self.log.info('手机连接成功 设备信息如下\n{}'.format(self.app_device.device_info))
             self.app_device.unlock()
@@ -141,8 +143,10 @@ class CrawlerAndroid(_CrawlerBase):
 
     def run(self):
         if not self._connect_device():
+            self._state = CrawlerStatus.CrawlerException
             return
         if not self._start_app():
+            self._state = CrawlerStatus.CrawlerException
             return
         super().run()
 
