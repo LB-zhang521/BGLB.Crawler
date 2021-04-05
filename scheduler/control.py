@@ -288,7 +288,6 @@ class Task(object):
             self.TaskWorkingList.remove(task_conf)
             time.sleep(2)
 
-
 # def main():
 #
 #     t = threading.Thread(target=task.main)
@@ -296,7 +295,6 @@ class Task(object):
 #     t.setDaemon(True)
 #     t.start()
 #     # t.join()
-
 
 if __name__ == '__main__':
     d1 = [{'1': {'2': 0}}]
