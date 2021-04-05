@@ -10,8 +10,11 @@ import time
 import flask
 import psutil
 
+from scheduler.control import Task
+# from services.web import create_web
 
-def code_template(project_name: str, crawler_type:str):
+
+def code_template(crawler_type:str):
     """
         代码模板
     :return: str
@@ -20,7 +23,7 @@ def code_template(project_name: str, crawler_type:str):
 from crawler.{crawler_type} import Crawler{crawler_type}
 
 
-class Crawler{project_name}(Crawler{crawler_type}):
+class Crawler(Crawler{crawler_type}):
 
     def __init__(self, crawler_config):
         super().__init__(crawler_config)
@@ -33,7 +36,7 @@ class Crawler{project_name}(Crawler{crawler_type}):
     
     def __del__(self):
         super().__del__()
-""".format(crawler_type=crawler_type.title(), project_name=project_name.title())
+""".format(crawler_type=crawler_type.title())
 
 
     return code_main
@@ -49,25 +52,33 @@ def create_spider(project_name):
     os.makedirs('{}'.format(project_name), exist_ok=True)
 
 
-def add_spider(project_name, crawler_type):
+def add_spider(project_name, crawler_type=None):
     """
-
     :param project_name: str
     :param crawler_type: str
     :return:
     """
     support_type = ['request', 'android', 'browser']
-    filename = '{}_{}'.format(project_name, crawler_type)
-    filepath = '{}/{}'.format(project_name, filename)
-    if os.path.exists(filepath):
-        print('已存在脚本{}'.format(filepath))
-        return
-    if crawler_type in support_type:
-        with open('./{}/{}_{}.py'.format(project_name, project_name, crawler_type), 'w', encoding='utf8') as f:
-            code_te = code_template(project_name, crawler_type)
+
+    if crawler_type is None:
+        for _type in support_type:
+            with open('./{}/{}.py'.format(project_name, _type), 'w', encoding='utf8') as f:
+                code_te = code_template(_type)
+                f.write(code_te)
+        print('创建完成！')
+    elif crawler_type in support_type:
+        filename = '{}.py'.format(crawler_type)
+        filepath = '{}/{}'.format(project_name, filename)
+        if os.path.exists(filepath):
+            print('已存在脚本{}')
+            return
+        with open('./{}'.format(filepath), 'w', encoding='utf8') as f:
+            code_te = code_template(crawler_type)
             f.write(code_te)
+        print('创建完成！')
     else:
         print('不支持的type')
+
 
 TaskConfig = {
     "TaskId": "13465786",
@@ -81,43 +92,39 @@ TaskConfig = {
     }
 
 }
+task = Task()
+# app = create_web(task)
 
 
-def check_program(name, cmdline):
-    if name == 'main':
-        if cmdline and len(cmdline) >= 2 and cmdline[0].endswith('python') and cmdline[1].endswith('main.py'):
-            return True
-    elif name == 'node_appium':
-        if cmdline and len(cmdline) == 8 and 'node' == cmdline[0] and 'appium' in cmdline[1]:
-            return True
-    return False
-
-
-def check_if_program_working(name):
-    match_pid = []
-    for proc in psutil.process_iter():
-        try:
-            pinfo = proc.as_dict(attrs=['pid', 'cmdline'])
-            cmdline = pinfo['cmdline']
-            # print(cmdline)
-            if check_program(name, cmdline):
-                match_pid.append(pinfo['pid'])
-        except psutil.NoSuchProcess:
-            pass
-    return match_pid
+def web_daemon():
+    time.sleep(2)
+    while True:
+        web_need_restart = True
+        crawler_need_restart = True
+        for proc in psutil.process_iter():
+            prinfo = proc.as_dict(attrs=['exe', 'cmdline', 'pid'])
+            # print(prinfo)
+            # return
+            if '{}'.format(sys.executable) in str(prinfo['exe']) and prinfo['cmdline'][-1] == 'start_web':
+                web_need_restart = False
+            if '{}'.format(sys.executable) in str(prinfo['exe']) and prinfo['cmdline'][-1] == 'start':
+                crawler_need_restart = False
+        # print("==============================="+str(threading.active_count()))
+        if web_need_restart:
+            os.system('start "start_web"  cmd /c {} ./manage.py start_web'.format(sys.executable))
+            time.sleep(5)
+        if crawler_need_restart:
+            os.system('start "start"  cmd /c {} ./manage.py start'.format(sys.executable))
+            time.sleep(5)
 
 
 def daemon():
-    task = Task()
     task.daemon().start()
 
 
-def server_http():
-    os.system('start_web.bat')
-
 if __name__ == '__main__':
     args = sys.argv
-    cmd_support = ['create', 'add', 'start', 'start_web']
+    cmd_support = ['create', 'add', 'start', 'start_web', 'start_crawler']
     default_out = "支持的命令有： 1. create 2. add"
     if len(args) <= 1:
         print(default_out)
@@ -126,6 +133,7 @@ if __name__ == '__main__':
             project_name = input('请输入爬虫项目名称：').replace('\n', '').replace(' ', '').lower()
             if project_name:
                 create_spider(project_name)
+                add_spider(project_name)
         if args[1] == cmd_support[1]:
             project_name = input('请输入爬虫项目名称：').replace(' ', '').replace('\n', '').lower()
             crawler_type = input('请输入爬虫脚本类型：').replace(' ', '').replace('\n', '').lower()
@@ -133,34 +141,19 @@ if __name__ == '__main__':
                 add_spider(project_name, crawler_type)
         if args[1] == cmd_support[2]:
             try:
-                from scheduler.control import Task
-                from services.web import app
-                task = Task()
                 # app.run()
-                t1 = threading.Thread(target=server_http)
-                t2 = threading.Thread(target=daemon)
+                daemon()
+                t1 = threading.Thread(target=web_daemon)
+                t1.setDaemon(True)
                 t1.start()
-                t2.start()
 
             except Exception:
                 pass
         if args[1] == cmd_support[3]:
             try:
-                from scheduler.control import Task
-                from services.web import app
-                # task = Task()
                 # app.run()
-                # t1 = threading.Thread(target=app.run)
-                # t2 = task.daemon()
-
-                # t1.start()
-                # t2.start()
-                app.run()
-                # while True:
-                #     pass
-                # time.sleep(.5)
+                pass
             except Exception:
                 pass
 
 
-        # print(str(threading.enumerate()))

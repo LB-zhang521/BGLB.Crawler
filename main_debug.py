@@ -13,7 +13,7 @@ TaskConfig = {
     "TaskName": "测试百度",
     "CrawlerConfig": {
         "CrawlerName": "baidu",
-        "CrawlerType": "browser",  # [request, brower, android]
+        "CrawlerType": "android",  # [request, brower, android]
     },
     "OrtherConfig": {
 
@@ -22,12 +22,10 @@ TaskConfig = {
 }
 
 
-def _main():
-    Task().add_one_task(TaskConfig)
-    pass
+def main():
+    Task().start_one_task(TaskConfig)
 
-# main()
-_main()
+main()
 
 
 

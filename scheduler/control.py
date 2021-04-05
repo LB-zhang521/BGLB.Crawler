@@ -17,6 +17,7 @@ from logger import BaseLog
 from config import node_config
 from scheduler.status_code import CrawlerStatus, TaskStatus, SaverStatus
 from utils.util import singleton
+import requests
 
 
 @singleton
@@ -49,7 +50,7 @@ class Task(object):
                 crawler_theard.start()
                 task_config['CrawlerInstance'] = crawler_theard
             except Exception as e:
-                self.log.error('{}爬虫实例化失败, 错误原因如下:{}'.format(crawler_config, traceback.format_exc()))
+                self.log.error('{}\n爬虫实例化失败错误原因如下:{}'.format(crawler_config, traceback.format_exc()))
                 task_config['TaskState'] = TaskStatus.CrawlerInstanceError.value
         else:
             task_config['TaskState'] = TaskStatus.CrawlerNotFound.value
@@ -90,14 +91,13 @@ class Task(object):
     def main(self):
         while True:
             self.isworking = True
-            self.update = False
             if self.TaskWaittingList:
                 for task_conf in self.TaskWaittingList:
                     self.TaskWaittingList.remove(task_conf)
                     self.start_one_task(task_conf)
             else:
                 self.get_all_tasks_detail()
-            if self.TaskWorkingList and not self.update:
+            if self.TaskWorkingList:
                 self.update_task_state()
                 # time.sleep(2)
             time.sleep(2)
@@ -128,7 +128,7 @@ class Task(object):
         for k, v in task_detail_dict.items():
             print('{}任务有{}个 排队'.format(k, v))
             time.sleep(.1)
-            pass
+            # pass
 
     def get_crawler_class(self, crawler_config: dict):
         """
@@ -139,13 +139,13 @@ class Task(object):
         crawler_name = crawler_config.get('CrawlerName', '')
         crawler_type = crawler_config.get('CrawlerType', '').lower()
         try:
-            crawler_module = importlib.import_module('{}.{}_{}'.format(crawler_name.lower(), crawler_name, crawler_type))
+            crawler_module = importlib.import_module('{}.{}'.format(crawler_name.lower(), crawler_type.lower()))
         except ModuleNotFoundError:
-            self.log.error('未找到模块[{}.{}_{}]'.format(crawler_name.lower(), crawler_name, crawler_type))
+            self.log.error('未找到模块[{}.{}]'.format(crawler_name.lower(), crawler_name, crawler_type))
             return None
-        if not hasattr(crawler_module, 'Crawler{}'.format(crawler_name.title())):
+        if not hasattr(crawler_module, 'Crawler'.format(crawler_name.title())):
             return None
-        CrawlerClass = getattr(crawler_module, 'Crawler{}'.format(crawler_name.title()))
+        CrawlerClass = getattr(crawler_module, 'Crawler'.format(crawler_name.title()))
         return CrawlerClass
 
     def add_one_task(self, task_conf) -> bool:
@@ -173,6 +173,10 @@ class Task(object):
                 if ins:
                     self._async_raise(ins.ident, SystemExit)
 
+    def pull_one_task(self):
+        while True:
+            requests.get('')
+            
     @staticmethod
     def _async_raise(tid, exctype):
         """https://stackoverflow.com/questions/323972/is-there-any-way-to-kill-a-thread"""
@@ -302,5 +306,5 @@ if __name__ == '__main__':
         for item in d1:
             item['1'].update(d2)
             d1.remove(item)
-    print(d1,d2)
+    print(d1, d2)
     pass

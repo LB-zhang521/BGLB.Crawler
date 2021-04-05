@@ -40,6 +40,11 @@ node_config = {
     },
     'android': {
         'MaxTaskCount': 1,
+        'devices': {
+            "SN": '851QFDSJ22TZ6',
+            'password': '0000',
+
+        }
     },
     'brower': {
         'MaxTaskCount': 1,

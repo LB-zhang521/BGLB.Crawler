@@ -5,6 +5,7 @@
 from functools import wraps
 from  config import CODE_TEMPLATE
 
+
 def singleton(cls):
     """
         单例装饰器 singleton
