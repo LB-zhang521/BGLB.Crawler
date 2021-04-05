@@ -88,10 +88,10 @@ def daemon():
             prinfo = proc.as_dict(attrs=['exe', 'pid'])
             # print(prinfo)
             # return
-            if StaticPath.screenpath == str(prinfo['exe]):
-                screen_need_restart = True
+            if StaticPath.screenpath == str(prinfo['exe']):
+                screen_need_restart = False
         print("==============================="+str(threading.active_count()))
-        if not screen_need_restart:
+        if screen_need_restart:
             threading.Thread(target=start_screen).start()
             time.sleep(10)
 
