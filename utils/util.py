@@ -2,8 +2,7 @@
 # @Time     : 2021-03-27 01:09
 # @Author   : BGLB
 # @Software : PyCharm
-from functools import wraps
-from  config import CODE_TEMPLATE
+from functools import wraps, reduce
 
 
 def singleton(cls):
@@ -22,3 +21,6 @@ def singleton(cls):
     return wrapper
 
 
+def remove_list_dict_duplicate(list_dict_data):
+    run_function = lambda x, y: x if y in x else x+[y]
+    return reduce(run_function, [[], ]+list_dict_data)

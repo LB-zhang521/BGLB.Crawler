@@ -2,6 +2,8 @@
 # @Time     : 2021-02-21 01:27
 # @Author   : BGLB
 # @Software : PyCharm
+import subprocess
+import sys
 
 from scheduler.control import Task
 
@@ -21,7 +23,7 @@ TaskConfig = {
 
 
 def main():
-    Task().start_one_task(TaskConfig)
+    Task().main()
 
 
 if __name__ == '__main__':

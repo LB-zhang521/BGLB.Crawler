@@ -85,7 +85,7 @@ class Task(object):
 
         return task_count
 
-    def _main(self):
+    def main(self):
         while True:
             self.isworking = True
             if self.TaskWaittingList:
@@ -98,13 +98,7 @@ class Task(object):
                 self.update_task_state()
                 # time.sleep(2)
             time.sleep(2)
-
-    def main_thread(self) -> threading.Thread:
-        t = threading.Thread(target=self._main)
-        # t.setDaemon(True)
-        t.name = "Daemon"
-        # t.start()
-        return t
+            self.log.info('11111+++++++++')
 
     def get_all_tasks_detail(self):
         """
@@ -294,6 +288,7 @@ class Task(object):
 #     t.setDaemon(True)
 #     t.start()
 #     # t.join()
+
 
 if __name__ == '__main__':
     d1 = [{'1': {'2': 0}}]

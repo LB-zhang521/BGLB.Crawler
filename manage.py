@@ -4,14 +4,7 @@
 # @Software : PyCharm
 import os
 import sys
-import threading
-import time
-import psutil
-
-from scheduler.control import Task
-# from services.web import create_web
-from services.screen import start_screen
-from utils.common.constant import StaticPath
+from services.daemon import crawler_thread_start, screen_thread_start, start_daemon
 
 
 def code_template(crawler_type:str):
@@ -80,54 +73,50 @@ def add_spider(project_name, crawler_type=None):
         print('不支持的type')
 
 
-def daemon():
-    time.sleep(2)
-    while True:
-        screen_need_restart = True
-        for proc in psutil.process_iter():
-            prinfo = proc.as_dict(attrs=['exe', 'pid'])
-            # print(prinfo)
-            # return
-            if StaticPath.screenpath == str(prinfo['exe']):
-                screen_need_restart = False
-        print("==============================="+str(threading.active_count()))
-        if screen_need_restart:
-            threading.Thread(target=start_screen).start()
-            time.sleep(10)
+# def start_daemon():
+#     print(os.path.join(BASE_DIR, 'daemon.py'))
+#     try:
+#         cmd = '{} {}'.format(sys.executable, os.path.join(BASE_DIR, 'daemon.py'))
+#         s = subprocess.Popen(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE, universal_newlines=True,
+#                              encoding='utf-8', shell=True)
+#         time.sleep(5)
+#         p = psutil.Process(s.pid)
+#         crawler_pid = 0
+#         for i in p.children():
+#             if cmd == ' '.join(i.cmdline()):
+#                 crawler_pid = i.pid
+#                 break
+#         p.kill()
+#         if crawler_pid != 0:
+#             print('daemon Process success start * * * pid-[{}]'.format(crawler_pid))
+#         else:
+#             print('daemon Process start error * * *')
+#     except Exception as e:
+#         print(traceback.format_exc())
 
 
 if __name__ == '__main__':
     args = sys.argv
-    cmd_support = ['create', 'add', 'start', 'start_crawler', 'start_screen']
-    default_out = "支持的命令有： 1. create 2. add"
-    if len(args) <= 1:
-        print(default_out)
-    else:
-        if args[1] == cmd_support[0]:
-            project_name = input('请输入爬虫项目名称：').replace('\n', '').replace(' ', '').lower()
-            if project_name:
-                create_spider(project_name)
-                add_spider(project_name)
-        if args[1] == cmd_support[1]:
-            project_name = input('请输入爬虫项目名称：').replace(' ', '').replace('\n', '').lower()
-            crawler_type = input('请输入爬虫脚本类型：').replace(' ', '').replace('\n', '').lower()
-            if project_name and crawler_type:
-                add_spider(project_name, crawler_type)
-        if args[1] == cmd_support[2]:
-            try:
-                # start_screen()
-                # threading.Thread(target=start_screen).start()
-                Task().main_thread().start()
-                t = threading.Thread(target=daemon)
-                t.setDaemon(True)
-                t.start()
-            except Exception:
-                pass
-        if args[1] == cmd_support[3]:
-            try:
-                Task().main_thread().start()
-            except Exception:
-                pass
-        if args[1] == cmd_support[4]:
-            threading.Thread(target=start_screen).start()
+    cmd_support = ['create', 'add', 'start', 'start_crawler', 'start_screen', 'stop_screen', 'stop_crawler', 'stop',
+                   'restart']
 
+    if len(args) <= 1:
+        print(''.join(cmd_support))
+    else:
+        pass
+    if args[1] == cmd_support[0]:
+        project_name = input('请输入爬虫项目名称：').replace('\n', '').replace(' ', '').lower()
+        if project_name:
+            create_spider(project_name)
+            add_spider(project_name)
+    if args[1] == cmd_support[1]:
+        project_name = input('请输入爬虫项目名称：').replace(' ', '').replace('\n', '').lower()
+        crawler_type = input('请输入爬虫脚本类型：').replace(' ', '').replace('\n', '').lower()
+        if project_name and crawler_type:
+            add_spider(project_name, crawler_type)
+    if args[1] == cmd_support[2]:
+        start_daemon()
+    if args[1] == cmd_support[3]:
+        crawler_thread_start()
+    if args[1] == cmd_support[4]:
+        screen_thread_start()
