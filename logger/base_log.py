@@ -57,6 +57,9 @@ class BaseLog(object):
             self.__logger.setLevel(logging.INFO)
         self.__add_handler()
 
+    def log_path(self, level):
+        return os.path.join(self.__log_dir, logging.getLevelName(level).lower()+'.log')
+
     def __del__(self):
         try:
             self.__delete_logger_handlers()
@@ -109,8 +112,8 @@ class BaseLog(object):
         :return:
         """
         log_file_path = os.path.join(self.__log_dir, logging.getLevelName(level).lower()+'.log')
-        handler = TimedRotatingFileHandler(filename=log_file_path, encoding='utf-8', when='M', interval=1,
-                                           backupCount=5)
+        handler = TimedRotatingFileHandler(filename=log_file_path, encoding='utf-8', when='D', interval=1,
+                                           backupCount=self.backup_count)
         handler.suffix = '%Y%m%d.bak'
         handler.extMatch = re.compile(r'^\d{8}.log$')
         handler.setFormatter(self.__formatter_file)

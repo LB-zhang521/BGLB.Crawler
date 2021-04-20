@@ -4,7 +4,7 @@
 # @Software : PyCharm
 import os
 import sys
-from services.daemon import crawler_thread_start, screen_thread_start, start_daemon
+from services.daemon import crawler_thread_start, screen_thread_start, start_daemon, stop, restart
 
 
 def code_template(crawler_type:str):
@@ -73,28 +73,6 @@ def add_spider(project_name, crawler_type=None):
         print('不支持的type')
 
 
-# def start_daemon():
-#     print(os.path.join(BASE_DIR, 'daemon.py'))
-#     try:
-#         cmd = '{} {}'.format(sys.executable, os.path.join(BASE_DIR, 'daemon.py'))
-#         s = subprocess.Popen(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE, universal_newlines=True,
-#                              encoding='utf-8', shell=True)
-#         time.sleep(5)
-#         p = psutil.Process(s.pid)
-#         crawler_pid = 0
-#         for i in p.children():
-#             if cmd == ' '.join(i.cmdline()):
-#                 crawler_pid = i.pid
-#                 break
-#         p.kill()
-#         if crawler_pid != 0:
-#             print('daemon Process success start * * * pid-[{}]'.format(crawler_pid))
-#         else:
-#             print('daemon Process start error * * *')
-#     except Exception as e:
-#         print(traceback.format_exc())
-
-
 if __name__ == '__main__':
     args = sys.argv
     cmd_support = ['create', 'add', 'start', 'start_crawler', 'start_screen', 'stop_screen', 'stop_crawler', 'stop',
@@ -120,3 +98,10 @@ if __name__ == '__main__':
         crawler_thread_start()
     if args[1] == cmd_support[4]:
         screen_thread_start()
+    if str(args[1]).startswith('stop'):
+        proc = str(args[1]).split('_')[-1]
+        proc.replace('stop', '')
+        stop(proc)
+
+    if args[1] == cmd_support[8]:
+        restart()

@@ -20,6 +20,8 @@ device_info = node_config.get('android').get('devices')
 
 screen_log = BaseLog('services', 'screen')
 
+start_cmd = cmd = ' '.join([StaticPath.screenpath, '-s', device_info.get('serial'), '--always-on-top'])
+
 
 def _check_device_(serial):
     adb_exe = StaticPath.adbexecpath
@@ -32,8 +34,8 @@ def _check_device_(serial):
 
 
 def start_screen() -> int:
-    if not device_info.get('enable'):
-        screen_log.warn('{} 设备未启用'.format(device_info))
+    if not device_info.get('enable') or not device_info.get('screen'):
+        screen_log.warn('{} 设备未启用或未开启投屏'.format(device_info))
         return -1
     if device_info.get('screen'):
         serial = device_info.get('serial')
@@ -41,10 +43,7 @@ def start_screen() -> int:
         screen_log.info('设备:{} state: {}'.format(serial, state))
         'offline | bootloader | device'
         if 'device' == state:
-            scrcpy_exe = StaticPath.screenpath  # "scrcpy -s --always-on-tops"  窗口最前
-            cmd = ' '.join([scrcpy_exe, '-s', serial, '--always-on-top'])
-            p = subprocess.Popen(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE, universal_newlines=True,
-                                 encoding='utf-8', shell=True,)
+            p = subprocess.Popen(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE, shell=True,)
             time.sleep(3)
             p = psutil.Process(p.pid)
             screen_pid = 0
@@ -58,5 +57,3 @@ def start_screen() -> int:
         else:
             screen_log.warn('{} 设备不在线')
             return 0
-    else:
-        screen_log.info('{} 设备未开启投屏'.format(device_info))

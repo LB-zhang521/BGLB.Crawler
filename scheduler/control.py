@@ -10,8 +10,8 @@ import time
 import traceback
 
 import requests
-
-from config import node_config
+from requests.exceptions import InvalidSchema
+from config import node_config, background_task_pool, node_capacity
 from logger import BaseLog
 from scheduler.status_code import CrawlerStatus, TaskStatus, SaverStatus
 from utils.util import singleton
@@ -27,6 +27,8 @@ class Task(object):
         self.__MaxTasksCount = self.get_max_task_count()
         self.isworking = False
         # self.TaskQueue = queue.LifoQueue(self.__MaxTasksCount)
+        self.background_task_pool = background_task_pool
+        self.node_capacity = node_capacity
 
     def start_one_task(self, task_config: dict):
         """
@@ -98,7 +100,11 @@ class Task(object):
                 self.update_task_state()
                 # time.sleep(2)
             time.sleep(2)
-            self.log.info('11111+++++++++')
+
+            for item in self.node_capacity:
+                t = self.pull_task_thread(item)
+                t.start()
+                t.join()
 
     def get_all_tasks_detail(self):
         """
@@ -109,14 +115,14 @@ class Task(object):
         work_task = self.get_work_task_count()
         task_detail_dict.update(work_task)
         for k, v in task_detail_dict.items():
-            print('{}任务有{}个 正在进行'.format(k, v))
+            self.log.info('{}任务 {}个进行'.format(k, v))
             time.sleep(.1)
         task_detail_dict = {}
         wait_task = self.get_wait_task_count()
         task_detail_dict.update(wait_task)
 
         for k, v in task_detail_dict.items():
-            print('{}任务有{}个 排队'.format(k, v))
+            self.log.info('{}任务 {}个排队'.format(k, v))
             time.sleep(.1)
             # pass
 
@@ -163,9 +169,27 @@ class Task(object):
                 if ins:
                     self._async_raise(ins.ident, SystemExit)
 
-    def pull_one_task(self):
-        while True:
-            requests.get('')
+    def pull_task_thread(self, spider_type: str) -> threading.Thread or None:
+        if self.TaskWaittingList:
+            currect_type_count = self.get_work_task_count()
+            if currect_type_count[spider_type] >= self.get_max_task_count(spider_type):
+                self.log.warn('{} 任务饱和 不再请求'.format(spider_type))
+                return None
+
+        def pull_task():
+            try:
+                task = requests.get(self.background_task_pool, params={'spider_type': spider_type}).json()
+                if task:
+                    task = eval(task)
+                    task['TaskState'] = TaskStatus.Waiting.value
+                    task['CrawlerInstance'] = None
+                    self.log.info('接收到新任务\n{}'.format(task))
+                    self.TaskWaittingList.append(task)
+            except InvalidSchema as e:
+                self.log.error(traceback.format_exc())
+        t = threading.Thread(target=pull_task)
+        self.log.info('{} 线程开始启动'.format(spider_type))
+        return t
 
     @staticmethod
     def _async_raise(tid, exctype):
@@ -291,11 +315,4 @@ class Task(object):
 
 
 if __name__ == '__main__':
-    d1 = [{'1': {'2': 0}}]
-    d2 = {'2': 2}
-    while True:
-        for item in d1:
-            item['1'].update(d2)
-            d1.remove(item)
-    print(d1, d2)
-    pass
+    Task().main()

@@ -33,6 +33,10 @@ LOG_CONFIG = {
     'LOG_ROOT_DIR': os.path.join(BASE_DIR, 'log')
 }
 
+background_task_pool = 'http://127.0.0.1:8001/spider'
+
+node_capacity = ['request', 'android', 'browser']
+
 node_config = {
     'request': {
         'MaxTaskCount': 10,
@@ -48,7 +52,7 @@ node_config = {
         },
 
     },
-    'brower': {
+    'browser': {
         'MaxTaskCount': 1,
         'ChromeVersion': "",
     }

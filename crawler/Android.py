@@ -6,8 +6,6 @@ import time
 import traceback
 from abc import abstractmethod
 
-from uiautomator2 import ConnectError
-
 from crawler._base import _CrawlerBase
 from config import node_config
 import uiautomator2 as u2
@@ -22,13 +20,6 @@ class CrawlerAndroid(_CrawlerBase):
     def __init__(self, crawler_config: dict):
         self.app_info = {}
         super().__init__(crawler_config)
-        # self.app_info = {
-        #     'PackageName': '',
-        #     'Activity': '',
-        #     'IsReset': True,
-        #     'IsWait': True,
-        # }
-
         self.__package_name = ''
         self.__device_info = node_config['android'].get('devices')
         self.device: u2.Device
@@ -45,7 +36,7 @@ class CrawlerAndroid(_CrawlerBase):
                     self.app_device.shell(['input', 'keyevent', '{}'.format(int(i)+7)])
                     self.app_device.sleep(.2)
                 self.log.info('{}手机解锁成功'.format(self.__device_info))
-        except ConnectError and RuntimeError as e:
+        except u2.ConnectError and RuntimeError as e:
             self.log.error('手机连接失败 原因如下\n{}'.format(traceback.format_exc()))
             return False
         return True
