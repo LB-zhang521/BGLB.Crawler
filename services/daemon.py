@@ -56,11 +56,25 @@ def daemon():
 
 
 def start_daemon():
+
+    for proc in psutil.process_iter():
+        _proc = proc.as_dict(attrs=['exe', 'cmdline', 'pid'])
+        cmdlind = _proc.get('cmdline', [])
+        if cmdlind and _start_cmd_dict.get('daemon') == ' '.join(cmdlind):
+            pid = _proc.get('pid')
+            try:
+                p = psutil.Process(pid)
+                print('{} Process running in {}'.format('daemon', pid))
+                print('You can call: python manage.py restart')
+                return
+            except psutil.NoSuchProcess:
+                pass
+
     try:
         cmd = _start_cmd_dict.get('daemon')
-        print(cmd)
-        s = subprocess.Popen(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE, universal_newlines=True,
-                             encoding='utf-8', shell=True)
+        # print(cmd)
+        s = subprocess.Popen(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE, shell=True)
+        print('daemon Process starting ...')
         time.sleep(5)
         p = psutil.Process(s.pid)
         crawler_pid = 0
@@ -79,6 +93,7 @@ def start_daemon():
 
 def crawler_thread_start():
     cmd = _start_cmd_dict.get('crawler')
+    print('crawler Process starting')
     s = subprocess.Popen(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE, shell=True)
     time.sleep(3)
     p = psutil.Process(s.pid)
@@ -96,6 +111,7 @@ def crawler_thread_start():
 
 
 def screen_thread_start():
+    print('screen Process starting')
     screen_pid = start_screen()
     if screen_pid != 0:
         daemon_log.info('screen Process start success  * * * pid-[{}]'.format(screen_pid))
@@ -134,6 +150,7 @@ def restart():
     print('stop success * * *')
     start_daemon()
     print('restart success * * *')
+
 
 def statu():
     p1 = psutil.Process(_proc_info_list[0].get('pid'))

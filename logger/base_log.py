@@ -43,7 +43,7 @@ class BaseLog(object):
             log_colors=LOG_CONFIG['LOG_COLOR_CONFIG'])
 
         self.__formatter_file = logging.Formatter(
-            '%(asctime)s [p:%(process)d t:%(thread)d-%(threadName)s] [{}] [{}] [%(levelname)s]: %(message)s'.format(_module, spider))
+            '%(asctime)s [p:%(process)d t:%(thread)d] [{}] [{}] [%(levelname)s]: %(message)s'.format(_module, spider))
 
         # 记录起来，用于回收
         self.__stream_console_handler = None

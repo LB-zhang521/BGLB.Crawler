@@ -53,7 +53,7 @@ node_config = {
 
     },
     'browser': {
-        'MaxTaskCount': 1,
+        'MaxTaskCount': 10,
         'ChromeVersion': "",
     }
 }

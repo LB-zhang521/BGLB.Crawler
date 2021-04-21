@@ -5,12 +5,12 @@
 import ctypes
 import importlib
 import inspect
-import threading
 import time
 import traceback
-
 import requests
-from requests.exceptions import InvalidSchema
+from requests.exceptions import InvalidSchema, ConnectionError
+from urllib3.exceptions import MaxRetryError, NewConnectionError
+
 from config import node_config, background_task_pool, node_capacity
 from logger import BaseLog
 from scheduler.status_code import CrawlerStatus, TaskStatus, SaverStatus
@@ -59,8 +59,8 @@ class Task(object):
         max = 0
         for k, v in node_config.items():
             max += int(v.get('MaxTaskCount'))
-            if v is task_type:
-                return v
+            if k is task_type:
+                return v.get('MaxTaskCount')
         return max
 
     def get_work_task_count(self) -> dict:
@@ -98,13 +98,14 @@ class Task(object):
                 self.get_all_tasks_detail()
             if self.TaskWorkingList:
                 self.update_task_state()
-                # time.sleep(2)
-            time.sleep(2)
+                time.sleep(2)
 
             for item in self.node_capacity:
-                t = self.pull_task_thread(item)
-                t.start()
-                t.join()
+                currect_type_count = self.get_work_task_count()
+                if currect_type_count[item] > 0 and currect_type_count[item] >= self.get_max_task_count(item):
+                    self.log.warn('{} 任务饱和 不再请求'.format(item))
+                    continue
+                self.pull_task_thread(item)
 
     def get_all_tasks_detail(self):
         """
@@ -132,19 +133,24 @@ class Task(object):
         :param crawler_config:
         :return:
         """
-        crawler_name = crawler_config.get('CrawlerName', '')
+        crawler_name = crawler_config.get('CrawlerName', '').lower()
         crawler_type = crawler_config.get('CrawlerType', '').lower()
         try:
-            crawler_module = importlib.import_module('{}.{}'.format(crawler_name.lower(), crawler_type.lower()))
+            crawler_module = importlib.import_module('{}.{}'.format(crawler_name, crawler_type))
         except ModuleNotFoundError:
-            self.log.error('未找到模块[{}.{}]'.format(crawler_name.lower(), crawler_name, crawler_type))
+            self.log.error('未找到模块[{}.{}]'.format(crawler_name, crawler_type))
             return None
-        if not hasattr(crawler_module, 'Crawler'.format(crawler_name.title())):
+        if not hasattr(crawler_module, 'Crawler'):
             return None
-        CrawlerClass = getattr(crawler_module, 'Crawler'.format(crawler_name.title()))
+        CrawlerClass = getattr(crawler_module, 'Crawler')
         return CrawlerClass
 
     def add_one_task(self, task_conf) -> bool:
+        """
+        暂时没用到
+        :param task_conf:
+        :return:
+        """
         if self.TaskWaittingList:
             crawler_type = task_conf.get('CrawlerConfig', {}).get('CrawlerType', '')
             currect_type_count = self.get_work_task_count()
@@ -169,27 +175,17 @@ class Task(object):
                 if ins:
                     self._async_raise(ins.ident, SystemExit)
 
-    def pull_task_thread(self, spider_type: str) -> threading.Thread or None:
-        if self.TaskWaittingList:
-            currect_type_count = self.get_work_task_count()
-            if currect_type_count[spider_type] >= self.get_max_task_count(spider_type):
-                self.log.warn('{} 任务饱和 不再请求'.format(spider_type))
-                return None
-
-        def pull_task():
-            try:
-                task = requests.get(self.background_task_pool, params={'spider_type': spider_type}).json()
-                if task:
-                    task = eval(task)
-                    task['TaskState'] = TaskStatus.Waiting.value
-                    task['CrawlerInstance'] = None
-                    self.log.info('接收到新任务\n{}'.format(task))
-                    self.TaskWaittingList.append(task)
-            except InvalidSchema as e:
-                self.log.error(traceback.format_exc())
-        t = threading.Thread(target=pull_task)
-        self.log.info('{} 线程开始启动'.format(spider_type))
-        return t
+    def pull_task_thread(self, spider_type: str):
+        try:
+            task = requests.get(self.background_task_pool, params={'spider_type': spider_type}).json()
+            if task:
+                task = dict(task)
+                task['TaskState'] = TaskStatus.Waiting.value
+                task['CrawlerInstance'] = None
+                self.log.info('接收到新任务\n{}'.format(task))
+                self.TaskWaittingList.append(task)
+        except (InvalidSchema, ConnectionError, MaxRetryError, NewConnectionError, ConnectionRefusedError) as e:
+            self.log.error(traceback.format_exc())
 
     @staticmethod
     def _async_raise(tid, exctype):
@@ -277,7 +273,7 @@ class Task(object):
             if _task.get('TaskState') == TaskStatus.SaverSuccess.value:
                 self.__task_end_handle(_task)
             state = task_instance.get_state()
-            self.log.info(state.value)
+
             if state.value == CrawlerStatus.CrawlerException.value or state.value == SaverStatus.SaverException.value:
                 if state.value == 2:
                     _task.update({'TaskState': TaskStatus.CrawlerFailed.value})
