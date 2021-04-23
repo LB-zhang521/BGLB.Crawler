@@ -2,7 +2,6 @@
 # @Time     : 2021-03-05 22:55
 # @Author   : BGLB
 # @Software : PyCharm
-import time
 from abc import abstractmethod
 
 from selenium import webdriver
@@ -53,7 +52,7 @@ class CrawlerBrowser(_CrawlerBase):
 
         # 屏蔽浏览器中的window.navigator.webdriver = true
         self.driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument",
-                               {"source": "Object.defineProperty(navigator,'webdriver',{get:()=>undefined})"})
+                                    {"source": "Object.defineProperty(navigator,'webdriver',{get:()=>undefined})"})
         self.driver.maximize_window()
 
     @abstractmethod

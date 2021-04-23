@@ -6,5 +6,3 @@ from services.daemon import daemon
 
 if __name__ == '__main__':
     daemon()
-
-

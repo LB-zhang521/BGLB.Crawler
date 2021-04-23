@@ -15,7 +15,6 @@ from config import node_config
 from logger import BaseLog
 from utils.common.constant import StaticPath
 
-
 device_info = node_config.get('android').get('devices')
 
 screen_log = BaseLog('services', 'screen')
@@ -43,7 +42,7 @@ def start_screen() -> int:
         screen_log.info('设备:{} state: {}'.format(serial, state))
         'offline | bootloader | device'
         if 'device' == state:
-            p = subprocess.Popen(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE, shell=True,)
+            p = subprocess.Popen(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE, shell=True, )
             time.sleep(3)
             p = psutil.Process(p.pid)
             screen_pid = 0

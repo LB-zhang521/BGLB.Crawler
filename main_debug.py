@@ -3,17 +3,14 @@
 # @Author   : BGLB
 # @Software : PyCharm
 
-import os
-import time
 from scheduler.control import Task
-
 
 TaskConfig = {
     "TaskId": "13465786",
     "TaskName": "测试百度",
     "CrawlerConfig": {
         "CrawlerName": "baidu",
-        "CrawlerType": "browser",  # [request, brower, android]
+        "CrawlerType": "browser",  # [request, browser, android]
     },
     "OrtherConfig": {
 
@@ -27,6 +24,3 @@ def main():
 
 
 main()
-
-
-

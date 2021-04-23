@@ -9,6 +9,7 @@ import time
 import traceback
 
 import psutil
+
 from config import BASE_DIR
 from logger import BaseLog
 from services.screen import start_screen, start_cmd
@@ -27,7 +28,7 @@ def daemon():
     c_pid = crawler_thread_start()
     s_pid = screen_thread_start()
     _proc_info_list.extend([psutil.Process(c_pid).as_dict(attrs=['exe', 'cmdline', 'pid']),
-                                psutil.Process(s_pid).as_dict(attrs=['exe', 'cmdline', 'pid'])])
+                            psutil.Process(s_pid).as_dict(attrs=['exe', 'cmdline', 'pid'])])
     while True:
         time.sleep(5)
         try:
@@ -56,7 +57,6 @@ def daemon():
 
 
 def start_daemon():
-
     for proc in psutil.process_iter():
         _proc = proc.as_dict(attrs=['exe', 'cmdline', 'pid'])
         cmdlind = _proc.get('cmdline', [])
@@ -161,5 +161,3 @@ def statu():
 
 if __name__ == '__main__':
     daemon()
-
-

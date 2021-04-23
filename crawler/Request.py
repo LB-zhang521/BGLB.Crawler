@@ -2,9 +2,8 @@
 # @Time     : 2021-03-05 22:57
 # @Author   : BGLB
 # @Software : PyCharm
-import json
-from abc import abstractmethod
 import requests
+
 from crawler._base import _CrawlerBase
 
 
@@ -13,7 +12,7 @@ class CrawlerRequest(_CrawlerBase):
     接口爬虫
     """
 
-    def __init__(self, crawlerConfig:dict):
+    def __init__(self, crawlerConfig: dict):
         super().__init__(crawlerConfig)
         self.session = requests.session()
         self.cookie_dict: dict = {}

@@ -4,10 +4,11 @@
 # @Software : PyCharm
 import os
 import sys
+
 from services.daemon import crawler_thread_start, screen_thread_start, start_daemon, stop, restart
 
 
-def code_template(crawler_type:str):
+def code_template(crawler_type: str):
     """
         代码模板
     :return: str
@@ -31,12 +32,10 @@ class Crawler(Crawler{crawler_type}):
         super().__del__()
 """.format(crawler_type=crawler_type.title())
 
-
     return code_main
 
 
 def create_spider(project_name):
-
     if os.path.exists(project_name):
         print('已存在项目{}'.format(project_name))
         return False

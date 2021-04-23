@@ -6,10 +6,10 @@ import time
 import traceback
 from abc import abstractmethod
 
-from crawler._base import _CrawlerBase
-from config import node_config
 import uiautomator2 as u2
 
+from config import node_config
+from crawler._base import _CrawlerBase
 from scheduler.status_code import CrawlerStatus
 
 
@@ -17,6 +17,7 @@ class CrawlerAndroid(_CrawlerBase):
     """
     安卓爬虫
     """
+
     def __init__(self, crawler_config: dict):
         self.app_info = {}
         super().__init__(crawler_config)

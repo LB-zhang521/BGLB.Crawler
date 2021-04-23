@@ -2,11 +2,8 @@
 # @Time     : 2021-02-21 01:27
 # @Author   : BGLB
 # @Software : PyCharm
-import subprocess
-import sys
 
 from scheduler.control import Task
-
 
 TaskConfig = {
     "TaskId": "132456789",

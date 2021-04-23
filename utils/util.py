@@ -18,6 +18,7 @@ def singleton(cls):
         if not _singleton.get(cls):
             _singleton[cls] = cls(*args, **kwargs)
         return _singleton[cls]
+
     return wrapper
 
 

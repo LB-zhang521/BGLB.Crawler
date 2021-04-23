@@ -7,5 +7,6 @@
 import sys
 
 from logger.base_log import BaseLog
+
 i = __import__('logger.base_log')
 sys.modules['logger.base_log'] = None

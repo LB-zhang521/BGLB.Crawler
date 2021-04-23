@@ -4,14 +4,15 @@
 # @Software : PyCharm
 import json
 import os
-import time
-from threading import Thread
-import execjs
+import traceback
 from abc import abstractmethod
+from threading import Thread
+
+import execjs
+
 from config import BASE_DIR
 from logger import BaseLog
 from scheduler.status_code import CrawlerStatus, SaverStatus
-import traceback
 
 
 class _CrawlerBase(Thread):
@@ -113,5 +114,3 @@ class _CrawlerBase(Thread):
             self._state = SaverStatus.SaverException
             return
         self.log.info('爬虫主线程工作完毕')
-
-

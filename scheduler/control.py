@@ -7,6 +7,7 @@ import importlib
 import inspect
 import time
 import traceback
+
 import requests
 from requests.exceptions import InvalidSchema, ConnectionError
 from urllib3.exceptions import MaxRetryError, NewConnectionError
@@ -300,6 +301,7 @@ class Task(object):
         if task_conf in self.TaskWorkingList:
             self.TaskWorkingList.remove(task_conf)
             time.sleep(2)
+
 
 # def main():
 #
