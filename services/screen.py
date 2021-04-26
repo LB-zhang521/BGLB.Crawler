@@ -40,7 +40,7 @@ def start_screen() -> int:
         serial = device_info.get('serial')
         state = _check_device_(serial)
         screen_log.info('设备:{} state: {}'.format(serial, state))
-        'offline | bootloader | device'
+        # 'offline | bootloader | device'
         if 'device' == state:
             p = subprocess.Popen(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE, shell=True, )
             time.sleep(3)

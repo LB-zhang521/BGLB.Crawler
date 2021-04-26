@@ -4,6 +4,7 @@
 # @Software : PyCharm
 import json
 import os
+import time
 import traceback
 from abc import abstractmethod
 from threading import Thread
@@ -22,14 +23,43 @@ class _CrawlerBase(Thread):
 
     def __init__(self, crawlerConfig: dict):
         super().__init__()
-        self.name = '{}{}'.format(crawlerConfig.get('CrawlerName'), crawlerConfig.get('CrawlerType'))
-
-        # 数据保存根目录
-        self.crawlerDataDir = os.path.join(BASE_DIR, r'{}\crawler_data'.format(crawlerConfig.get('CrawlerName')))
+        self.name = '{}_{}'.format(crawlerConfig.get('CrawlerName'), crawlerConfig.get('CrawlerType'))
+        self.timestamp = str(int(time.time()))
+        self.base_dir = os.path.join(BASE_DIR, r'{}\crawler_data'.format(crawlerConfig.get('CrawlerName')))
         self.log = BaseLog('crawler', '{}_{}'.format(crawlerConfig.get('CrawlerName'), crawlerConfig.get(
             'CrawlerType')))
+        self.__init_data_dir()
         self.cookie_dict = {}
+
         self._state = CrawlerStatus.CrawlerStart
+
+    def __init_data_dir(self):
+        """
+            初始化一些数据目录, 方便之后文件上传
+        :return:
+        """
+        # 数据保存根目录
+        self.data_dir = os.path.join(self.base_dir, self.timestamp)
+        self.temp_dir = os.path.join(self.data_dir, 'temp')
+        self.json_dir = os.path.join(self.data_dir, 'json')
+        self.img_dir = os.path.join(self.data_dir, 'img')
+        self.db_dir = os.path.join(self.data_dir, 'db')
+        self.log.info('数据存储路径: 【{}】'.format(self.data_dir))
+        os.makedirs(self.temp_dir, exist_ok=True)
+        os.makedirs(self.json_dir, exist_ok=True)
+        os.makedirs(self.img_dir, exist_ok=True)
+        os.makedirs(self.db_dir, exist_ok=True)
+
+    def make_dir(self, dir_name):
+        """
+            在self.data_dir创建目录 并返回路径
+        :param dir_name:
+        :return:
+        """
+        dir = os.path.join(self.data_dir, dir_name)
+        os.makedirs(dir)
+        self.log.info('创建目录： {}'.format(dir))
+        return dir
 
     def _load_cookie(self, cookies: dict = None):
         """
@@ -38,7 +68,7 @@ class _CrawlerBase(Thread):
         :return:
         """
         try:
-            with open(self.crawlerDataDir.join('cookies.txt'), 'r') as f:
+            with open(r'{}\cookies.txt'.format(self.base_dir), 'r') as f:
                 self.cookie_dict = json.loads(f, encoding='utf8')
         except IOError:
             self.log.warn('不存在历史cookie')
@@ -55,7 +85,7 @@ class _CrawlerBase(Thread):
         """
         save_cookie = self.cookie_dict
         save_cookie.update(cookies)
-        with open(self.crawlerDataDir.join('cookies.txt'), 'w', encoding='utf8') as f:
+        with open(r'{}\cookies.txt'.format(self.base_dir), 'w', encoding='utf8') as f:
             json.dump(save_cookie, f)
         self.log.info('保存cookies成功')
 
@@ -81,10 +111,13 @@ class _CrawlerBase(Thread):
     def saver(self):
         self.log.warn('数据存储方法未实现')
 
-    def save_to_csv(self, data):
-        pass
+    def save_to_json(self, filename, data):
+        """
 
-    def save_to_json(self, data):
+        :param filename:
+        :param data:
+        :return:
+        """
         pass
 
     def get_state(self):

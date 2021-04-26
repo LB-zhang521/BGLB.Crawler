@@ -13,6 +13,17 @@ def code_template(crawler_type: str):
         代码模板
     :return: str
     """
+    code_init = ''
+    if crawler_type.lower() == 'android':
+        code_init = """self.app_info = {
+            'PackageName': '',
+            'Activity': '',
+            'IsReset': True,
+            'IsWait': True,
+            'AppName': ''
+        } 
+"""
+
     code_main = """
 from crawler.{crawler_type} import Crawler{crawler_type}
 
@@ -21,16 +32,16 @@ class Crawler(Crawler{crawler_type}):
 
     def __init__(self, crawler_config):
         super().__init__(crawler_config)
-      
+        {code_init}
     def spider(self):
         pass
-          
+
     def saver(self):
         pass
-    
+
     def __del__(self):
         super().__del__()
-""".format(crawler_type=crawler_type.title())
+""".format(crawler_type=crawler_type.title(), code_init=code_init)
 
     return code_main
 

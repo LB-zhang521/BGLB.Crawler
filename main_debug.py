@@ -9,8 +9,8 @@ TaskConfig = {
     "TaskId": "13465786",
     "TaskName": "测试百度",
     "CrawlerConfig": {
-        "CrawlerName": "baidu",
-        "CrawlerType": "browser",  # [request, browser, android]
+        "CrawlerName": "hide_u",
+        "CrawlerType": "android",  # [request, browser, android]
     },
     "OrtherConfig": {
 

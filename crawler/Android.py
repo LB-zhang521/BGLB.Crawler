@@ -18,27 +18,30 @@ class CrawlerAndroid(_CrawlerBase):
     安卓爬虫
     """
 
-    def __init__(self, crawler_config: dict):
+    def __init__(self, crawler_config: dict, ):
         self.app_info = {}
         super().__init__(crawler_config)
         self.__package_name = ''
         self.__device_info = node_config['android'].get('devices')
-        self.device: u2.Device
-        # self._start_app()
+        self.app_device: u2.Device
+        u2.logger = self.log.get_logger()
 
     def _connect_device(self):
         try:
             self.app_device = u2.connect_usb(self.__device_info.get('serial'))
             self.app_device.healthcheck()
-            self.log.info('手机连接成功 设备信息如下\n{}'.format(self.app_device.device_info))
+            self.log.info('手机连接成功 设备信息如下: {}'.format(self.app_device.device_info))
             self.app_device.unlock()
+            if 'systemui' in self.app_device.info.get('currentPackageName'):
+                while not self.app_device(resourceId='com.android.systemui:id/passwordEntry').exists(0):
+                    self.app_device.swipe_ext('up')
+
             if self.app_device(resourceId='com.android.systemui:id/passwordEntry').exists(5):
                 for i in self.__device_info.get('password'):
                     self.app_device.shell(['input', 'keyevent', '{}'.format(int(i)+7)])
-                    self.app_device.sleep(.2)
                 self.log.info('{}手机解锁成功'.format(self.__device_info))
         except u2.ConnectError and RuntimeError as e:
-            self.log.error('手机连接失败 原因如下\n{}'.format(traceback.format_exc()))
+            self.log.error('手机连接失败 原因如下: {}'.format(traceback.format_exc()))
             return False
         return True
 
@@ -54,7 +57,7 @@ class CrawlerAndroid(_CrawlerBase):
         self.app_device.app_start(self.__package_name, self.app_info.get('Activity'), stop=True)
         if self.app_info.get('IsWait'):
             self.log.info('app 【{}】等待应用启动中'.format(self.__package_name))
-            pid = self.app_device.app_wait(self.__package_name, front=True, timeout=5)
+            pid = self.app_device.app_wait(self.__package_name, front=True, timeout=3, )
             if pid == 0:
                 self.log.warn('am start app 【{}】启动超时'.format(self.__package_name))
                 return self.__click_app_()
