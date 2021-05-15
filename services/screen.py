@@ -19,7 +19,7 @@ device_info = node_config.get('android').get('devices')
 
 screen_log = BaseLog('services', 'screen')
 
-start_cmd = cmd = ' '.join([StaticPath.screenpath, '-s', device_info.get('serial'), '--always-on-top'])
+start_cmd = ' '.join([StaticPath.screenpath, '-s', device_info.get('serial'), '--always-on-top'])
 
 
 def _check_device_(serial):
@@ -42,12 +42,12 @@ def start_screen() -> int:
         screen_log.info('设备:{} state: {}'.format(serial, state))
         # 'offline | bootloader | device'
         if 'device' == state:
-            p = subprocess.Popen(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE, shell=True, )
+            p = subprocess.Popen(start_cmd, creationflags=subprocess.CREATE_NEW_CONSOLE, shell=True, )
             time.sleep(3)
             p = psutil.Process(p.pid)
             screen_pid = 0
             for i in p.children():
-                if cmd == ' '.join(i.cmdline()):
+                if start_cmd == ' '.join(i.cmdline()):
                     screen_pid = i.pid
                 else:
                     i.kill()

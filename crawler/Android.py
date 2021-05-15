@@ -25,6 +25,7 @@ class CrawlerAndroid(_CrawlerBase):
         self.__device_info = node_config['android'].get('devices')
         self.app_device: u2.Device
         u2.logger = self.log.get_logger()
+        self.is_start_app = True
 
     def _connect_device(self):
         try:
@@ -137,12 +138,14 @@ class CrawlerAndroid(_CrawlerBase):
         pass
 
     def run(self):
-        if not self._connect_device():
-            self._state = CrawlerStatus.CrawlerException
-            return
-        if not self._start_app():
-            self._state = CrawlerStatus.CrawlerException
-            return
+        self.log.info('是否启动app: {}'.format(self.is_start_app))
+        if self.is_start_app:
+            if not self._connect_device():
+                self._state = CrawlerStatus.CrawlerException
+                return
+            if not self._start_app():
+                self._state = CrawlerStatus.CrawlerException
+                return
         super().run()
 
     def __del__(self):

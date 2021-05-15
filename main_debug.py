@@ -9,7 +9,7 @@ TaskConfig = {
     "TaskId": "13465786",
     "TaskName": "测试百度",
     "CrawlerConfig": {
-        "CrawlerName": "hide_u",
+        "CrawlerName": "weixin",
         "CrawlerType": "android",  # [request, browser, android]
     },
     "OrtherConfig": {

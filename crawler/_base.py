@@ -25,7 +25,7 @@ class _CrawlerBase(Thread):
         super().__init__()
         self.name = '{}_{}'.format(crawlerConfig.get('CrawlerName'), crawlerConfig.get('CrawlerType'))
         self.timestamp = str(int(time.time()))
-        self.base_dir = os.path.join(BASE_DIR, r'{}\crawler_data'.format(crawlerConfig.get('CrawlerName')))
+        self.base_dir = os.path.join(BASE_DIR, r'crawler_data\{}'.format(crawlerConfig.get('CrawlerName')))
         self.log = BaseLog('crawler', '{}_{}'.format(crawlerConfig.get('CrawlerName'), crawlerConfig.get(
             'CrawlerType')))
         self.__init_data_dir()

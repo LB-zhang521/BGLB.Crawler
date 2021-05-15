@@ -130,7 +130,7 @@ class Task(object):
 
     def get_crawler_class(self, crawler_config: dict):
         """
-            获取爬虫实例
+            获取爬虫类
         :param crawler_config:
         :return:
         """
@@ -139,7 +139,7 @@ class Task(object):
         try:
             crawler_module = importlib.import_module('{}.{}'.format(crawler_name, crawler_type))
         except ModuleNotFoundError:
-            self.log.error('未找到模块[{}.{}]'.format(crawler_name, crawler_type))
+            self.log.error('未找到模块【{}.{}】{}'.format(crawler_name, crawler_type, traceback.format_exc()))
             return None
         if not hasattr(crawler_module, 'Crawler'):
             return None
