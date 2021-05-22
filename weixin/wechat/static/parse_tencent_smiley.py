@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 
-import xml.etree.ElementTree as ET
-import os
 import json
+import os
+import xml.etree.ElementTree as ET
 
 
 def parse_smiley_xml():
@@ -16,7 +16,7 @@ def parse_smiley_xml():
         if 'smiley_values' not in name:
             continue
         if '_th' in name:
-            continue        # ignore thailand language
+            continue  # ignore thailand language
         lst = [c.text for c in child]
         assert len(lst) == 105
         for idx, v in enumerate(lst):
@@ -33,8 +33,9 @@ def parse_extra_smiley():
     # some extra smiley from javascript on wx.qq.com
     with open("tencent-smiley-extra.json") as f:
         obj = json.load(f)
-    extra = {'[' + k + ']': os.path.join("smileys", f"{v}.png") for k, v in obj.items()}
+    extra = {'['+k+']': os.path.join("smileys", f"{v}.png") for k, v in obj.items()}
     return extra
+
 
 def parse_new_emoji():
     ret = {}
@@ -50,9 +51,10 @@ def parse_new_emoji():
                 ret[v] = filename
     return ret
 
+
 def parse_unicode_smiley():
     # 1f35c -> "\ue340"
-    #self.unicode_smiley_code = gUnicodeCodeMap
+    # self.unicode_smiley_code = gUnicodeCodeMap
 
     # u'\U0001f35c' -> "e340"   # for iphone
     # u'\ue415' -> 'e415'       # for android
@@ -66,17 +68,21 @@ def parse_unicode_smiley():
     with open("unicode-smiley.json") as f:
         d = json.load(f)
     for k, v in d.items():
-        fname = os.path.join("smileys", hex(ord(v))[2:] + ".png")
+        fname = os.path.join("smileys", hex(ord(v))[2:]+".png")
         ret[unichar(int(k, 16))] = fname
         ret[v] = fname
     return ret
 
+
 if __name__ == "__main__":
     # parse old smileys
     smileys = {}
+
+
     def add(dic, name):
         smileys.update(dic)
         print(f"Found {len(dic)} smileys from {name}. Total is {len(smileys)}")
+
 
     add(parse_smiley_xml(), "smiley.xml")
     add(parse_extra_smiley(), "tencent-smiley-extra.json")

@@ -11,7 +11,7 @@ from .common.textutil import get_file_b64
 from .common.procutil import subproc_succ
 
 SILK_DECODER = os.path.join(os.path.dirname(__file__),
-                            r'common\decoder')
+                            r'common\decoder.exe')
 
 
 def parse_wechat_audio_file(file_name):
@@ -52,7 +52,7 @@ def do_parse_wechat_audio_file(file_name):
 
             raw_file = os.path.join(temp,
                                     os.path.basename(file_name)[:-4]+'.raw')
-            cmd = 'sh {0} {1} {2}'.format(SILK_DECODER, file_name, raw_file)
+            cmd = '{0} {1} {2}'.format(SILK_DECODER, file_name, raw_file)
             out = subproc_succ(cmd)
             for line in out.split(b'\n'):
                 if b'File length' in line:

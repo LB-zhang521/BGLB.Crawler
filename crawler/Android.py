@@ -139,8 +139,9 @@ class CrawlerAndroid(_CrawlerBase):
 
     def run(self):
         self.log.info('是否启动app: {}'.format(self.is_start_app))
+        res = self._connect_device()
         if self.is_start_app:
-            if not self._connect_device():
+            if not res:
                 self._state = CrawlerStatus.CrawlerException
                 return
             if not self._start_app():

@@ -3,12 +3,18 @@
 # @Author   : BGLB
 # @Software : PyCharm
 import os
+import re
 import sys
 from _md5 import md5
 from datetime import timedelta
 
+import jieba
 import matplotlib.pyplot as plt
+import numpy as np
+from PIL import Image
+from numpy import histogram
 from pysqlcipher3 import dbapi2 as sqlite
+from wordcloud import WordCloud
 
 from crawler.Android import CrawlerAndroid
 from weixin.wechat.common.textutil import safe_filename, ensure_unicode
@@ -63,10 +69,11 @@ class Crawler(CrawlerAndroid):
         chats = parser.msgs_by_chat.keys()
         chat_list = [{parser.contacts[k]: k} for k in chats]
         self.log.info(chat_list)
-        self.parse_msg_txt('高敏洁')
-        self.parse_msg_html('高敏洁')
-
+        # self.parse_msg_txt('高敏洁')
+        # self.parse_msg_html('高敏洁')
+        #
         # self.parse_msg_img('高敏洁')
+        self.parse_msg_ciyun()
 
     def get_key(self, imei: str):
         """
@@ -177,25 +184,74 @@ class Crawler(CrawlerAndroid):
         name = ensure_unicode(user_name)
         print(name)
         every_k_days = 1
-
         parser = WeChatDBParser(db_file)
-        self.log.info(parser.msgs_by_chat.keys())
         chat_id = parser.get_chat_id(user_name)
         msgs = parser.msgs_by_chat[chat_id]
-
-        print('==============================================')
-        self.log.info(msgs[0])
-
         times = [x.createTime for x in msgs]
         start_time = times[0]
         diffs = [(x-start_time).days for x in times]
         max_day = diffs[-1]
+        labels = list(set([(start_time+timedelta(x)).strftime("%m/%d") for x in diffs]))
+        labels.sort()
+        x_index = [i for i in range(len(labels))]
+        diff_hist = histogram(diffs, bins=int(max_day/every_k_days))
+        self.log.info('x: {}'.format(labels))
+        self.log.info(diff_hist)
+        self.log.info("{}, {}".format(len(diff_hist[0]), len(diff_hist[1])))
 
-        width = 20
-        numbers = range(int((max_day/width+1)*width+1))[::width]
-        labels = [(start_time+timedelta(x)).strftime("%m/%d") for x in numbers]
-        plt.xticks(numbers, labels)
+        chart_name = 'Chat statistics'
+        fig = plt.figure(chart_name, figsize=(15, 8))
+        plt.rcParams['font.sans-serif'] = ["SimHei"]  # 防止画图中文乱码
+        plt.rcParams['axes.unicode_minus'] = False
+        plt.title(chart_name)
+        plt.bar(diff_hist[1][:-1], diff_hist[0], width=0.5)
+        plt.xticks(x_index, labels)
         plt.xlabel("Date")
         plt.ylabel("Number of msgs in k days")
-        plt.hist(diffs, bins=int(max_day/every_k_days))
-        plt.show()
+
+        file_name = self.img_dir+'/聊天統計圖.jpg'
+        plt.savefig(file_name)
+
+    def parse_msg_ciyun(self):
+        """
+            解析聊天文本 生成词云
+        :param username:
+        :return:
+        """
+        with open(self.txt_path, 'r', encoding='utf8') as f:
+            src_txt = []
+            re_list = [re.compile(r"[^a-zA-Z]\d+"), re.compile(r"\s+"),
+                       re.compile(r"[^0-9A-Za-z\u4e00-\u9fa5]")]
+
+            for i in f.readlines():
+                try:
+                    item = i.split(':')[4]
+                except:
+                    self.log.info(i)
+                    item = ''
+                if item.startswith('URL') or item.startswith('wxid') or item.startswith('<'):
+                    continue
+
+                for reg in re_list:
+                    text = reg.sub("", item)
+                    if text:
+                        src_txt.append(text)
+        self.log.info('len : {}'.format(len(src_txt)))
+        fig = plt.figure("聊天词云", figsize=(15, 10))
+        fig.patch.set_facecolor('#384151')
+        alice_mask = np.array(Image.open(os.path.join(self.base_dir, "back.jpg")))
+        wordcloud = WordCloud(
+            font_path=os.path.join(self.base_dir, "simkai.ttf"),  # 字体的路径
+            width=1000, height=1000,  # 设置宽高
+            background_color='white',  # 图片的背景颜色
+            mask=alice_mask,
+            stopwords=['捂脸', '你', '我', '苦涩',
+                       '嗯嗯', '了', '的', '感觉',
+                       '是', '那', '就', '嗯', '不', '都', '把', '说',
+                       '这', '也', '吗', '在', '给', '有', '吧', ],
+        ).generate(" ".join(jieba.cut((''.join(src_txt).encode('utf8')))))
+
+        plt.title('聊天记录词云', fontsize=20)
+        # plt.tof(wordcloud.generate(" ".join(src_txt)), interpolation='bilinear')
+        plt.axis("off")
+        wordcloud.to_file(os.path.join(self.data_dir, '词云图.jpg'))
